@@ -7,6 +7,9 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#include <wchar.h>
+#include <locale.h>
+
 double map(double x, double l1, double h1, double l2, double h2);
 int main(int argc, char *argv[]);
 
@@ -17,7 +20,33 @@ double map(double x, double l1, double h1, double l2, double h2) {
 
 int main(int argc, char *argv[]) {
 
-    printf("%f\n", map(1, 0,2, 0,3));
+    setlocale(LC_CTYPE, "");
 
-    return(0);
+    int maxX = 10;
+    int maxY = 10;
+    int i = 0;
+    int j = 0;
+
+    char graph[maxY][maxX];
+
+    for (i = 0; i < maxY; i++) {
+        for (j = 0; j < maxX; j++) {
+            graph[i][j] = ' ';
+        }
+    }
+    
+
+    for (i=0; i<maxX; i++) {
+        graph[0][i] = '─';
+        graph[maxY-1][i] = '─';
+    } 
+
+    // char x[] = "----------";
+
+    // strcpy(graph[0], x);
+    // strcpy(graph[maxY-1], x);
+
+    for (i=0; i<maxY; i++) {
+        printf("%s\n", graph[i]);
+    }
 }

@@ -182,6 +182,14 @@ int main(int argc, char *argv[]) {
 
     char graph[maxY][maxX];
 
+    for (i = 0; i < maxY; i++) {
+        for (j = 0; j < maxX; j++) {
+            graph[i][j] = ' ';
+        }
+        
+    }
+    
+
     for (i=0; i<maxX; i++) {
         graph[0][i] = '-';
         graph[maxY-1][i] = '-';
