@@ -8,13 +8,22 @@
 #include <ctype.h>
 #include <wchar.h>
 #include <locale.h>
+#include <time.h>
+#include <math.h>
 
 double map(double x, double l1, double h1, double l2, double h2);
+int digits(int x, int y);
 int main(int argc, char *argv[]);
-
 
 double map(double x, double l1, double h1, double l2, double h2) {
     return (((x-l1)/(h1-l1)) * (h2-l2)) + l2;
+}
+
+int digits(int x, int y){ // call this function with (y=0)
+    if (x > 10) {
+        return digits(x/10, y+1);
+    }
+    return y+1;
 }
 
 int main(int argc, char *argv[]) {
@@ -25,51 +34,65 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    setlocale(LC_CTYPE, "");
+    setlocale(LC_CTYPE, ""); // Set locale for unicode characters
 
     int maxX = 100;
-    int maxY = 60;
-
+    int maxY = 40;
     double ath = 0;
     double atl = 99999999;
-
     char data[1000000];
     int i = 0;
     int j = 0;
     char tempPriceStr[50];
     double tempPrice;
 
+    // Get current date and date of 2 months ago
+    char d1[100];
+    char d2[100];
+    time_t now = time(NULL);
+    struct tm *t1 = localtime(&now);
+    strftime(d1, sizeof(d1)-1, "%Y-%m-%d", t1);
+    now = time(NULL) - 7884000; // number of seconds in 3 months
+    struct tm *t2 = localtime(&now);
+    strftime(d2, sizeof(d2)-1, "%Y-%m-%d", t2);
+    
+
+    // cUrl the API and store the resulting characters in the variable "data"
     FILE *p;
     int ch;
-    char cmd[] = "curl -s \"http://api.marketstack.com/v1/eod?access_key=b1b863864c3e595e1eea256725870434&date_from=2021-08-01&date_to=2021-11-30&symbols=";
+    char cmd[500] = "curl -s \"http://api.marketstack.com/v1/eod?access_key=b1b863864c3e595e1eea256725870434&date_from="; // construct the cUrl command
+    strcat(cmd, d2); //     Construct the URL like this because C is an ancient language with no better way of concatenating strings
+    strcat(cmd, "&date_to=");
+    strcat(cmd, d1);
+    strcat(cmd, "&symbols=");
     strcat(cmd, argv[1]);
     strcat(cmd, "\"");
-
+    // printf("%s\n", cmd);
+    // return(0);
     p = popen(cmd,"r");
-
     if( p == NULL)
     {
         puts("Unable to open process");
         return(1);
     }
-
     while( (ch=fgetc(p)) != EOF) {
         data[i] = ch;
         i++;
     }
     pclose(p);
 
-    printf("%s\n", data);
+    // printf("%s\n", data);
 
     // This shouldn't exceed 30 rows, I'm only gonna pull 30 days worth of data
-    // Each row is of the shape: [Open, high, low, close]
-    double barData[1000][4];
+    // Each row is of the shape: [Open, high, low, close, day]
+    double barData[1000][5];
     int bari = 0;
-
-    i = 0;
-    // looking for either 0=open, 1=high, 2=low, 3=close
+    
+    // looking for either 0=open, 1=high, 2=low, 3=close, 4=day
     int looking = 0;
-    while (data[i] != ']') {
+    char tmpDay[2];
+    i = 0;
+    while (data[i] != ']') { // Scan through returned API data, extract certain parts
         switch(looking){
             case 0:
                 if (data[i-1]=='"' && data[i]=='o' && data[i+1]=='p' && data[i+2]=='e' && data[i+3]=='n' ) {
@@ -118,7 +141,7 @@ int main(int argc, char *argv[]) {
                 break;
             case 3:
                 if (data[i-1]=='"' && data[i]=='c' && data[i+1]=='l' && data[i+2]=='o' && data[i+3]=='s' && data[i+4]=='e' ) {
-                    looking = 0;
+                    looking = 4;
                     j = i+7;
                     while (data[j] != ',') {
                         tempPriceStr[j-i-7] = data[j];
@@ -127,25 +150,35 @@ int main(int argc, char *argv[]) {
                     tempPriceStr[j-i-6] = '\0';
                     tempPrice = atof(tempPriceStr);
                     barData[bari][3] = tempPrice;
+                }
+                break;
+            case 4:
+                if (data[i-1]=='"' && data[i]=='d' && data[i+1]=='a' && data[i+2]=='t' && data[i+3]=='e') {
+                    looking = 0;
+                    tmpDay[0] = data[i+15];
+                    tmpDay[1] = data[i+16];
+                    tmpDay[2] = '\0';
+                    barData[bari][4] = atof(tmpDay);
                     bari++;
                 }
                 break;
 
             default:
-                printf("ERROR: looking has an invalid value");
+                printf("ERROR: looking has an invalid value\n");
+                return(1);
         }
-
         i++;
     }
 
     int barYLen = bari;
-    for(i=0; i<barYLen; i++) {
-        printf("%f, %f, %f, %f\n", barData[i][0], barData[i][1], barData[i][2], barData[i][3]);
-    }
+    // for(i=0; i<barYLen; i++) {
+    //     printf("%f, %f, %f, %f, %f\n", barData[i][0], barData[i][1], barData[i][2], barData[i][3], barData[i][4]);
+    // }
+    maxX = barYLen + 12;
 
+    // Create 2d array of unicode characters that will become the graph
     wchar_t graph[maxY][maxX];
-
-    for (i = 0; i < maxY; i++) {
+    for (i = 0; i < maxY; i++) { // Clear the array by setting every element to a blank space
         for (j = 0; j < maxX; j++) {
             graph[i][j] = ' ';
         }
@@ -158,8 +191,8 @@ int main(int argc, char *argv[]) {
     }
     // Draw left and right borders
     for (i=0; i<maxY; i++) {
-        graph[i][0] = i%5==0 ? 0x253c : '|';
-        graph[i][maxX-1] = '|';
+        graph[i][0] = i%5==0 ? 0x253c : 0x2502;
+        graph[i][maxX-1] = 0x2502;
     }
     // Draw corners
     graph[0][0] = 0x250c; // 0x250c = ┌
@@ -167,79 +200,119 @@ int main(int argc, char *argv[]) {
     graph[maxY-1][0] = 0x2514; // 0x2514 = └
     graph[maxY-1][maxX-1] = 0x2518; // 0x2518 = ┘
 
-    j = 6;
+    // Draw graph title
+    char upper[10];
+    for (i=0; i < strlen(argv[1]); i++) {
+        upper[i] = toupper(argv[1][i]);
+    }
+    upper[i] = '\0';
+
+    char title[50] = "  3 Month Stock Price for $";
+    strcat(title, upper);
+    strcat(title, "  ");
+    graph[0][1] = 0x2524; // ┤
+    for (i=0; i < strlen(title); i++) {
+        graph[0][i+2] = title[i];
+    }
+    graph[0][i+2] = 0x251c; // ├
+
+    // Declare variables for drawing candlesticks
+    j = 5;
     int low = 4;
     int high = maxY - 4;
     int mlow;
     int mhigh;
     int vpos;
     int tmp;
-
+    // Declare array for keeping track of which columns saw an increase or a decrease in stock price
     int columnColors[maxX]; // 0 = white, 1 = red, 2 = green
     for (i=0; i<maxX; i++) {
-        columnColors[i] = 0;
+        columnColors[i] = 0; // Initialize by setting every element to 0
     }
 
     for (i=0; i < barYLen; i++){
-        // map high/low
+        // map high/low parts of the candlestick
         mlow = map(barData[i][2], atl, ath, low, high);
         mhigh = map(barData[i][1], atl, ath, low, high);
         // graph[mlow][j] = 0x2588;
         for (vpos=mlow;vpos<=mhigh;vpos++) {
-            graph[vpos][j] = '|';
+            graph[vpos][j] = 0x2502; // fill in the high/low part of the candlestick
         }
-
-        // map open/close
+        // map open/close parts of the candlestick
         mlow = map(barData[i][0], atl, ath, low, high);
         mhigh = map(barData[i][3], atl, ath, low, high);
-        if (mlow > mhigh){
+        if (mlow > mhigh){ // If "mlow" is greater than "mhigh", that means the stock went down in price
             tmp = mlow;
             mlow = mhigh;
             mhigh = tmp;
             columnColors[j] = 1;
         }
-        else{
+        else{ // Otherwise the stock increased in price
             columnColors[j] = 2;
         }
         // graph[mlow][j] = 0x2588;
         for (vpos=mlow;vpos<=mhigh;vpos++) {
-            graph[vpos][j] = 0x2588;
+            graph[vpos][j] = 0x2588; // fill in the open/close part of the candlestick
         }
-
         j++;
     }
 
     // Draw graph
-    wchar_t special;
+    int margin = digits((int) ath*100, 0) + 2;
+    double price;
     for (i=0; i<maxY; i++) {
         printf("\x1b[0m");
-        printf(" ");
+        // Drawy y axis labes
+        if (i % 5 == 0 && i >= low && i <= high) {
+            price = map(i, low, high, atl, ath);
+            for (j=0; j<margin-digits((int)price*100, 0)-2; j++) {
+                printf(" ");
+            }
+            printf("$%.2f",price);
+        }
+        else{
+            for (j=0; j<margin; j++){
+                printf(" ");
+            }
+        }
         for (j = 0; j < maxX; j++) {
             if (i != 0 && i != maxY-1){
-                switch (columnColors[j]) {
+                switch (columnColors[j]) { // ASCII Escape sequences for setting print color
                 case 0:
-                    printf("\x1b[0m");
+                    printf("\x1b[0m"); // White
                     break;
                 case 1:
-                    printf("\x1b[31m");
+                    printf("\x1b[31m"); // Red
                     break;
                 case 2:
-                    printf("\x1b[32m");
+                    printf("\x1b[32m"); // Green
                     break;
                 
                 default:
                     printf("ERROR: Incorrect columncolor\n");
-                    break;
+                    return(1);
                 }
             }
             printf("%lc", graph[i][j]);
         }
         printf("\n");
     }
-
-    // for (i=0;i<barYLen;i++) {
-
-    // }
+    // Draw x axis labels
+    for (j=0; j<margin; j++){
+        printf(" ");
+    }
+    printf("     "); // account for margin
+    for (j=0; j <barYLen; j++) {
+        if (j % 5 == 0) {
+            printf("%i", (int) barData[j][4]);
+            if ((int) barData[j][4] > 9) {
+                printf("   ");
+            }
+            else {
+                printf("    ");
+            }
+        }
+    }
 
     printf("\n");
     return(0);
