@@ -28,12 +28,12 @@ int main(int argc, char *argv[]) {
     setlocale(LC_CTYPE, "");
 
     int maxX = 100;
-    int maxY = 30;
+    int maxY = 60;
 
-    double ath = 99999999;
-    double atl = 0;
+    double ath = 0;
+    double atl = 99999999;
 
-    char data[10000];
+    char data[1000000];
     int i = 0;
     int j = 0;
     char tempPriceStr[50];
@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
 
     FILE *p;
     int ch;
-    char cmd[] = "curl -s \"http://api.marketstack.com/v1/eod?access_key=81febc3f2c33df988a02f8e763e76358&date_from=2021-12-24&date_to=2022-01-03&symbols=";
+    char cmd[] = "curl -s \"http://api.marketstack.com/v1/eod?access_key=b1b863864c3e595e1eea256725870434&date_from=2021-08-01&date_to=2021-11-30&symbols=";
     strcat(cmd, argv[1]);
     strcat(cmd, "\"");
 
@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
 
     // This shouldn't exceed 30 rows, I'm only gonna pull 30 days worth of data
     // Each row is of the shape: [Open, high, low, close]
-    double barData[50][4];
+    double barData[1000][4];
     int bari = 0;
 
     i = 0;
@@ -143,51 +143,96 @@ int main(int argc, char *argv[]) {
         printf("%f, %f, %f, %f\n", barData[i][0], barData[i][1], barData[i][2], barData[i][3]);
     }
 
-    char graph[maxY][maxX+1];
+    wchar_t graph[maxY][maxX];
 
     for (i = 0; i < maxY; i++) {
-        for (j = 0; j < maxX-1; j++) {
+        for (j = 0; j < maxX; j++) {
             graph[i][j] = ' ';
         }
-        graph[i][maxX-1] = '\0';
     }
-    
 
+    // Draw top and bottom borders
     for (i=0; i<maxX; i++) {
-        graph[0][i] = 'a';
-        graph[maxY-1][i] = 'a';
+        graph[0][i] = 0x2500; // 0x2500 = ─
+        graph[maxY-1][i] = i%5==0 ? 0x253c : 0x2500;
+    }
+    // Draw left and right borders
+    for (i=0; i<maxY; i++) {
+        graph[i][0] = i%5==0 ? 0x253c : '|';
+        graph[i][maxX-1] = '|';
+    }
+    // Draw corners
+    graph[0][0] = 0x250c; // 0x250c = ┌
+    graph[0][maxX-1] = 0x2510; // 0x2510 = ┐
+    graph[maxY-1][0] = 0x2514; // 0x2514 = └
+    graph[maxY-1][maxX-1] = 0x2518; // 0x2518 = ┘
+
+    j = 6;
+    int low = 4;
+    int high = maxY - 4;
+    int mlow;
+    int mhigh;
+    int vpos;
+    int tmp;
+
+    int columnColors[maxX]; // 0 = white, 1 = red, 2 = green
+    for (i=0; i<maxX; i++) {
+        columnColors[i] = 0;
     }
 
-    // Key: a=─, b=┌, c=┐, d=└, e=┘
+    for (i=0; i < barYLen; i++){
+        // map high/low
+        mlow = map(barData[i][2], atl, ath, low, high);
+        mhigh = map(barData[i][1], atl, ath, low, high);
+        // graph[mlow][j] = 0x2588;
+        for (vpos=mlow;vpos<=mhigh;vpos++) {
+            graph[vpos][j] = '|';
+        }
+
+        // map open/close
+        mlow = map(barData[i][0], atl, ath, low, high);
+        mhigh = map(barData[i][3], atl, ath, low, high);
+        if (mlow > mhigh){
+            tmp = mlow;
+            mlow = mhigh;
+            mhigh = tmp;
+            columnColors[j] = 1;
+        }
+        else{
+            columnColors[j] = 2;
+        }
+        // graph[mlow][j] = 0x2588;
+        for (vpos=mlow;vpos<=mhigh;vpos++) {
+            graph[vpos][j] = 0x2588;
+        }
+
+        j++;
+    }
+
+    // Draw graph
     wchar_t special;
-    char c;
     for (i=0; i<maxY; i++) {
-        for (j = 0; j < maxX-1; j++) {
-            c = graph[i][j];
-            switch(c){
-                case 'a':
-                    special = 0x2500;
-                    printf("%lc", special);
+        printf("\x1b[0m");
+        printf(" ");
+        for (j = 0; j < maxX; j++) {
+            if (i != 0 && i != maxY-1){
+                switch (columnColors[j]) {
+                case 0:
+                    printf("\x1b[0m");
                     break;
-                case 'b':
-                    special = 0x250c;
-                    printf("%lc", special);
+                case 1:
+                    printf("\x1b[31m");
                     break;
-                case 'c':
-                    special = 0x2510;
-                    printf("%lc", special);
+                case 2:
+                    printf("\x1b[32m");
                     break;
-                case 'd':
-                    special = 0x2514;
-                    printf("%lc", special);
-                    break;
-                case 'e':
-                    special = 0x2518;
-                    printf("%lc", special);
-                    break;
+                
                 default:
-                    printf("%c",graph[i][j]);
+                    printf("ERROR: Incorrect columncolor\n");
+                    break;
+                }
             }
+            printf("%lc", graph[i][j]);
         }
         printf("\n");
     }
@@ -196,5 +241,6 @@ int main(int argc, char *argv[]) {
 
     // }
 
+    printf("\n");
     return(0);
 }
