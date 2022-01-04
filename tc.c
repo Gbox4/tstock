@@ -314,6 +314,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    printf("\n");
+    printf("\n\n");
     return(0);
 }
