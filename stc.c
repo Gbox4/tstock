@@ -171,6 +171,14 @@ int main(int argc, char *argv[]) {
     }
 
     int barYLen = bari;
+    // Reverse the barData
+    double barDataRev[1000][5];
+    for (i=0; i<barYLen; i++) {
+        for (j = 0; j < 5; j++) {
+            barDataRev[i][j] = barData[barYLen - i - 1][j];
+        }
+    }
+
     // for(i=0; i<barYLen; i++) {
     //     printf("%f, %f, %f, %f, %f\n", barData[i][0], barData[i][1], barData[i][2], barData[i][3], barData[i][4]);
     // }
@@ -206,7 +214,6 @@ int main(int argc, char *argv[]) {
         upper[i] = toupper(argv[1][i]);
     }
     upper[i] = '\0';
-
     char title[50] = "  3 Month Stock Price for $";
     strcat(title, upper);
     strcat(title, "  ");
@@ -231,16 +238,17 @@ int main(int argc, char *argv[]) {
     }
 
     for (i=0; i < barYLen; i++){
+        // printf("%f\n", barDataRev[i][4]);
         // map high/low parts of the candlestick
-        mlow = map(barData[i][2], atl, ath, low, high);
-        mhigh = map(barData[i][1], atl, ath, low, high);
+        mhigh = map(barDataRev[i][2], atl, ath, high, low);
+        mlow = map(barDataRev[i][1], atl, ath, high, low);
         // graph[mlow][j] = 0x2588;
         for (vpos=mlow;vpos<=mhigh;vpos++) {
             graph[vpos][j] = 0x2502; // fill in the high/low part of the candlestick
         }
         // map open/close parts of the candlestick
-        mlow = map(barData[i][0], atl, ath, low, high);
-        mhigh = map(barData[i][3], atl, ath, low, high);
+        mhigh = map(barDataRev[i][0], atl, ath, high, low);
+        mlow = map(barDataRev[i][3], atl, ath, high, low);
         if (mlow > mhigh){ // If "mlow" is greater than "mhigh", that means the stock went down in price
             tmp = mlow;
             mlow = mhigh;
@@ -264,7 +272,7 @@ int main(int argc, char *argv[]) {
         printf("\x1b[0m");
         // Drawy y axis labes
         if (i % 5 == 0 && i >= low && i <= high) {
-            price = map(i, low, high, atl, ath);
+            price = map(i, low, high, ath, atl);
             for (j=0; j<margin-digits((int)price*100, 0)-2; j++) {
                 printf(" ");
             }
@@ -304,8 +312,8 @@ int main(int argc, char *argv[]) {
     printf("     "); // account for margin
     for (j=0; j <barYLen; j++) {
         if (j % 5 == 0) {
-            printf("%i", (int) barData[j][4]);
-            if ((int) barData[j][4] > 9) {
+            printf("%i", (int) barDataRev[j][4]);
+            if ((int) barDataRev[j][4] > 9) {
                 printf("   ");
             }
             else {
