@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
 
     // Check for right number of arguments
     if (argc != 2) {
-        printf("Usage: stc TICKER\n");
+        printf("Usage: tstock TICKER\n");
         return 1;
     }
 
