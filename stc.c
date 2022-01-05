@@ -57,10 +57,10 @@ int main(int argc, char *argv[]) {
     strftime(d2, sizeof(d2)-1, "%Y-%m-%d", t2);
     
 
-    // cUrl the API and store the resulting characters in the variable "data"
+    // cURL the API and store the resulting characters in the variable "data"
     FILE *p;
     int ch;
-    char cmd[500] = "curl -s \"http://api.marketstack.com/v1/eod?access_key=b1b863864c3e595e1eea256725870434&date_from="; // construct the cUrl command
+    char cmd[500] = "curl -s \"http://api.marketstack.com/v1/eod?access_key=b1b863864c3e595e1eea256725870434&date_from="; // construct the cURL command
     strcat(cmd, d2); //     Construct the URL like this because C is an ancient language with no better way of concatenating strings
     strcat(cmd, "&date_to=");
     strcat(cmd, d1);
@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
     p = popen(cmd,"r");
     if( p == NULL)
     {
-        puts("Unable to open process");
+        puts("ERROR: Unable to run curl command. Is cURL installed on this system?");
         return(1);
     }
     while( (ch=fgetc(p)) != EOF) {
