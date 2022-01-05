@@ -20,7 +20,7 @@ double map(double x, double l1, double h1, double l2, double h2) {
 }
 
 int digits(int x, int y){ // call this function with (y=0)
-    if (x > 10) {
+    if (x > 9) {
         return digits(x/10, y+1);
     }
     return y+1;
@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
 
     // Check for right number of arguments
     if (argc != 2) {
-        printf("Usage: ./tc TICKER\n");
+        printf("Usage: stc TICKER\n");
         return 1;
     }
 
@@ -80,6 +80,11 @@ int main(int argc, char *argv[]) {
         i++;
     }
     pclose(p);
+
+    if (strlen(data) < 100){
+        printf("ERROR: Didn't recieve data from API. Is this stock covered by the API?\n");
+        return(0);
+    }
 
     // printf("%s\n", data);
 
@@ -266,14 +271,15 @@ int main(int argc, char *argv[]) {
     }
 
     // Draw graph
-    int margin = digits((int) ath*100, 0) + 2;
+    int margin = digits((int) (ath*100), 0) + 2;
+
     double price;
     for (i=0; i<maxY; i++) {
         printf("\x1b[0m");
-        // Drawy y axis labes
+        // Drawy y axis labels
         if (i % 5 == 0 && i >= low && i <= high) {
             price = map(i, low, high, ath, atl);
-            for (j=0; j<margin-digits((int)price*100, 0)-2; j++) {
+            for (j=0; j<margin-digits((int)(price*100), 0)-2; j++) {
                 printf(" ");
             }
             printf("$%.2f",price);
