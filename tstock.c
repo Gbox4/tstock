@@ -34,6 +34,17 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    // Check for API key
+    const char *apikey = getenv("MARKETSTACK_API_KEY");
+    if (apikey == NULL) {
+        printf("ERROR: API key not detected! Follow these instructions to get your API Key working:\n");
+        printf("- Make a free MarketStack API account at https://marketstack.com/signup/free\n");
+        printf("- Login and find your API Access Key on the Dashboard page\n");
+        printf("- Run \"export MARKETSTACK_API_KEY=<your access key>\".\n");
+        printf("    You can make this permanent by adding a line like \"export MARKETSTACK_API_KEY=<your access key>\" to your .bashrc\n");
+        return(1);
+    }
+
     setlocale(LC_CTYPE, ""); // Set locale for unicode characters
 
     int maxX = 100;
@@ -60,7 +71,9 @@ int main(int argc, char *argv[]) {
     // cURL the API and store the resulting characters in the variable "data"
     FILE *p;
     int ch;
-    char cmd[500] = "curl -s \"http://api.marketstack.com/v1/eod?access_key=b1b863864c3e595e1eea256725870434&date_from="; // construct the cURL command
+    char cmd[500] = "curl -s \"http://api.marketstack.com/v1/eod?access_key="; // construct the cURL command
+    strcat(cmd, apikey);
+    strcat(cmd, "&date_from=");
     strcat(cmd, d2); //     Construct the URL like this because C is an ancient language with no better way of concatenating strings
     strcat(cmd, "&date_to=");
     strcat(cmd, d1);
@@ -83,7 +96,7 @@ int main(int argc, char *argv[]) {
 
     if (strlen(data) < 100){
         printf("ERROR: Didn't recieve data from API. Is this stock covered by the API?\n");
-        return(0);
+        return(1);
     }
 
     // printf("%s\n", data);
@@ -98,6 +111,10 @@ int main(int argc, char *argv[]) {
     char tmpDay[2];
     i = 0;
     while (data[i] != ']') { // Scan through returned API data, extract certain parts
+        if (data[i-1]=='"' && data[i]=='e' && data[i+1]=='r' && data[i+2]=='r' && data[i+3]=='o' && data[i+4]=='r' ) {
+            printf("ERROR: The API retured an error: %s\n", data);
+            return(1);
+        }
         switch(looking){
             case 0:
                 if (data[i-1]=='"' && data[i]=='o' && data[i+1]=='p' && data[i+2]=='e' && data[i+3]=='n' ) {
