@@ -10,39 +10,84 @@
 #include <locale.h>
 #include <time.h>
 #include <math.h>
+#include <unistd.h>
 
 double map(double x, double l1, double h1, double l2, double h2);
 int digits(int x, int y);
 int main(int argc, char *argv[]);
+void printHelp();
 
-double map(double x, double l1, double h1, double l2, double h2) {
-    return (((x-l1)/(h1-l1)) * (h2-l2)) + l2;
+void printHelp()
+{
+    printf("Usage: tstock [OPTIONS]... TICKER\n"
+           "Prints a candlestick chart of TICKER in the terminal.\n"
+           "Options:\n"
+           "    -d [days]       number of days to go back in API call\n"
+           "    -h              print this message and exit\n"
+           "    -v              enables verbosity\n");
+    return;
 }
 
-int digits(int x, int y){ // call this function with (y=0)
-    if (x > 9) {
-        return digits(x/10, y+1);
+double map(double x, double l1, double h1, double l2, double h2)
+{
+    return (((x - l1) / (h1 - l1)) * (h2 - l2)) + l2;
+}
+
+int digits(int x, int y)
+{ // call this function with (y=0)
+    if (x > 9)
+    {
+        return digits(x / 10, y + 1);
     }
-    return y+1;
+    return y + 1;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 
+    // Parse options
+    int verbose = 0;
+    int daysBack = 90;
+    int opt; // TODO setup args for different API backends, day/year ranges
+    while ((opt = getopt(argc, argv, ":d:v")) != -1)
+    {
+        switch (opt)
+        {
+        case 'd':
+            daysBack = atoi(optarg);
+            break;
+        case 'h':
+            printHelp();
+            return 0;
+            break;
+        case 'v':
+            verbose = 1;
+            break;
+        case ':':
+            printf("Option -%c needs a value.\n", optopt);
+            break;
+        case '?':
+            printf("Unknown option `-%c'.\n", optopt);
+            break;
+        }
+    }
     // Check for right number of arguments
-    if (argc != 2) {
-        printf("Usage: tstock TICKER\n");
+    if (optind != argc - 1)
+    {
+        printHelp();
         return 1;
     }
 
     // Check for API key
     const char *apikey = getenv("MARKETSTACK_API_KEY");
-    if (apikey == NULL) {
-        printf("ERROR: API key not detected! Follow these instructions to get your API Key working:\n");
+    if (apikey == NULL)
+    {
+        printf("API key not detected! Follow these instructions to get your API Key working:\n");
         printf("- Make a free MarketStack API account at https://marketstack.com/signup/free\n");
         printf("- Login and find your API Access Key on the Dashboard page\n");
         printf("- Run \"export MARKETSTACK_API_KEY=<your access key>\".\n");
         printf("    You can make this permanent by adding a line like \"export MARKETSTACK_API_KEY=<your access key>\" to your .bashrc\n");
-        return(1);
+        return (1);
     }
 
     setlocale(LC_CTYPE, ""); // Set locale for unicode characters
@@ -54,19 +99,23 @@ int main(int argc, char *argv[]) {
     char data[1000000];
     int i = 0;
     int j = 0;
-    char tempPriceStr[50];
+    char tempPriceStr[500];
     double tempPrice;
+    char ticker[50];
+    strcpy(ticker, argv[optind]);
+
+    char strDaysBack[10];
+    sprintf(strDaysBack, "%d", daysBack);
 
     // Get current date and date of 2 months ago
     char d1[100];
     char d2[100];
     time_t now = time(NULL);
     struct tm *t1 = localtime(&now);
-    strftime(d1, sizeof(d1)-1, "%Y-%m-%d", t1);
-    now = time(NULL) - 7884000; // number of seconds in 3 months
+    strftime(d1, sizeof(d1) - 1, "%Y-%m-%d", t1);
+    now = time(NULL) - (86400 * daysBack); // defaults to 90 days * seconds in a day
     struct tm *t2 = localtime(&now);
-    strftime(d2, sizeof(d2)-1, "%Y-%m-%d", t2);
-    
+    strftime(d2, sizeof(d2) - 1, "%Y-%m-%d", t2);
 
     // cURL the API and store the resulting characters in the variable "data"
     FILE *p;
@@ -78,172 +127,201 @@ int main(int argc, char *argv[]) {
     strcat(cmd, "&date_to=");
     strcat(cmd, d1);
     strcat(cmd, "&symbols=");
-    strcat(cmd, argv[1]);
+    strcat(cmd, ticker);
     strcat(cmd, "\"");
-    // printf("%s\n", cmd);
-    // return(0);
-    p = popen(cmd,"r");
-    if( p == NULL)
+    if (verbose)
+        printf("Running the following cURL command: %s\n", cmd);
+    p = popen(cmd, "r");
+    if (p == NULL)
     {
-        puts("ERROR: Unable to run curl command. Is cURL installed on this system?");
-        return(1);
+        puts("Unable to run curl command. Is cURL installed on this system?");
+        return (1);
     }
-    while( (ch=fgetc(p)) != EOF) {
+    while ((ch = fgetc(p)) != EOF)
+    {
         data[i] = ch;
         i++;
     }
     pclose(p);
 
-    if (strlen(data) < 100){
-        printf("ERROR: Didn't recieve data from API. Is this stock covered by the API?\n");
-        return(1);
+    if (strlen(data) < 100)
+    {
+        printf("Didn't recieve data from API. Is this stock covered by the API?\n");
+        return (1);
     }
 
-    // printf("%s\n", data);
+    if (verbose)
+        printf("Raw JSON data recieved:\n%s\nParsing...", data);
 
     // This shouldn't exceed 30 rows, I'm only gonna pull 30 days worth of data
     // Each row is of the shape: [Open, high, low, close, day]
     double barData[1000][5];
     int bari = 0;
-    
+
     // looking for either 0=open, 1=high, 2=low, 3=close, 4=day
     int looking = 0;
-    char tmpDay[2];
+    char tmpDay[4];
     i = 0;
-    while (data[i] != ']') { // Scan through returned API data, extract certain parts
-        if (data[i-1]=='"' && data[i]=='e' && data[i+1]=='r' && data[i+2]=='r' && data[i+3]=='o' && data[i+4]=='r' ) {
+    while (data[i] != ']')
+    { // Scan through returned API data, extract certain parts
+        if (data[i - 1] == '"' && data[i] == 'e' && data[i + 1] == 'r' && data[i + 2] == 'r' && data[i + 3] == 'o' && data[i + 4] == 'r')
+        {
             printf("ERROR: The API retured an error: %s\n", data);
-            return(1);
+            return (1);
         }
-        switch(looking){
-            case 0:
-                if (data[i-1]=='"' && data[i]=='o' && data[i+1]=='p' && data[i+2]=='e' && data[i+3]=='n' ) {
-                    looking = 1;
-                    j = i+6;
-                    while (data[j] != ',') {
-                        tempPriceStr[j-i-6] = data[j];
-                        j++;
-                    }
-                    tempPriceStr[j-i-5] = '\0';
-                    tempPrice = atof(tempPriceStr);
-                    barData[bari][0] = tempPrice;
+        switch (looking)
+        {
+        case 0:
+            if (data[i - 1] == '"' && data[i] == 'o' && data[i + 1] == 'p' && data[i + 2] == 'e' && data[i + 3] == 'n')
+            {
+                looking = 1;
+                j = i + 6;
+                while (data[j] != ',')
+                {
+                    tempPriceStr[j - i - 6] = data[j];
+                    j++;
                 }
-                break;
-            case 1:
-                if (data[i-1]=='"' && data[i]=='h' && data[i+1]=='i' && data[i+2]=='g' && data[i+3]=='h' ) {
-                    looking = 2;
-                    j = i+6;
-                    while (data[j] != ',') {
-                        tempPriceStr[j-i-6] = data[j];
-                        j++;
-                    }
-                    tempPriceStr[j-i-5] = '\0';
-                    tempPrice = atof(tempPriceStr);
-                    barData[bari][1] = tempPrice;
-                    if (tempPrice > ath) {
-                        ath = tempPrice;
-                    }
+                tempPriceStr[j - i - 5] = '\0';
+                tempPrice = atof(tempPriceStr);
+                barData[bari][0] = tempPrice;
+            }
+            break;
+        case 1:
+            if (data[i - 1] == '"' && data[i] == 'h' && data[i + 1] == 'i' && data[i + 2] == 'g' && data[i + 3] == 'h')
+            {
+                looking = 2;
+                j = i + 6;
+                while (data[j] != ',')
+                {
+                    tempPriceStr[j - i - 6] = data[j];
+                    j++;
                 }
-                break;
-            case 2:
-                if (data[i-1]=='"' && data[i]=='l' && data[i+1]=='o' && data[i+2]=='w' ) {
-                    looking = 3;
-                    j = i+5;
-                    while (data[j] != ',') {
-                        tempPriceStr[j-i-5] = data[j];
-                        j++;
-                    }
-                    tempPriceStr[j-i-4] = '\0';
-                    tempPrice = atof(tempPriceStr);
-                    barData[bari][2] = tempPrice;
-                    if (tempPrice < atl) {
-                        atl = tempPrice;
-                    }
+                tempPriceStr[j - i - 5] = '\0';
+                tempPrice = atof(tempPriceStr);
+                barData[bari][1] = tempPrice;
+                if (tempPrice > ath)
+                {
+                    ath = tempPrice;
                 }
-                break;
-            case 3:
-                if (data[i-1]=='"' && data[i]=='c' && data[i+1]=='l' && data[i+2]=='o' && data[i+3]=='s' && data[i+4]=='e' ) {
-                    looking = 4;
-                    j = i+7;
-                    while (data[j] != ',') {
-                        tempPriceStr[j-i-7] = data[j];
-                        j++;
-                    }
-                    tempPriceStr[j-i-6] = '\0';
-                    tempPrice = atof(tempPriceStr);
-                    barData[bari][3] = tempPrice;
+            }
+            break;
+        case 2:
+            if (data[i - 1] == '"' && data[i] == 'l' && data[i + 1] == 'o' && data[i + 2] == 'w')
+            {
+                looking = 3;
+                j = i + 5;
+                while (data[j] != ',')
+                {
+                    tempPriceStr[j - i - 5] = data[j];
+                    j++;
                 }
-                break;
-            case 4:
-                if (data[i-1]=='"' && data[i]=='d' && data[i+1]=='a' && data[i+2]=='t' && data[i+3]=='e') {
-                    looking = 0;
-                    tmpDay[0] = data[i+15];
-                    tmpDay[1] = data[i+16];
-                    tmpDay[2] = '\0';
-                    barData[bari][4] = atof(tmpDay);
-                    bari++;
+                tempPriceStr[j - i - 4] = '\0';
+                tempPrice = atof(tempPriceStr);
+                barData[bari][2] = tempPrice;
+                if (tempPrice < atl)
+                {
+                    atl = tempPrice;
                 }
-                break;
+            }
+            break;
+        case 3:
+            if (data[i - 1] == '"' && data[i] == 'c' && data[i + 1] == 'l' && data[i + 2] == 'o' && data[i + 3] == 's' && data[i + 4] == 'e')
+            {
+                looking = 4;
+                j = i + 7;
+                while (data[j] != ',')
+                {
+                    tempPriceStr[j - i - 7] = data[j];
+                    j++;
+                }
+                tempPriceStr[j - i - 6] = '\0';
+                tempPrice = atof(tempPriceStr);
+                barData[bari][3] = tempPrice;
+            }
+            break;
+        case 4:
+            if (data[i - 1] == '"' && data[i] == 'd' && data[i + 1] == 'a' && data[i + 2] == 't' && data[i + 3] == 'e')
+            {
+                looking = 0;
+                tmpDay[0] = data[i + 15];
+                tmpDay[1] = data[i + 16];
+                tmpDay[2] = '\0';
+                barData[bari][4] = atof(tmpDay);
+                bari++;
+            }
+            break;
 
-            default:
-                printf("ERROR: looking has an invalid value\n");
-                return(1);
+        default:
+            printf("ERROR: looking has an invalid value\n");
+            return (1);
         }
         i++;
     }
 
     int barYLen = bari;
+    if (verbose)
+        printf("Found %i days of OHLC data.\n", barYLen);
     // Reverse the barData
     double barDataRev[1000][5];
-    for (i=0; i<barYLen; i++) {
-        for (j = 0; j < 5; j++) {
+    for (i = 0; i < barYLen; i++)
+    {
+        for (j = 0; j < 5; j++)
+        {
             barDataRev[i][j] = barData[barYLen - i - 1][j];
         }
     }
 
-    // for(i=0; i<barYLen; i++) {
-    //     printf("%f, %f, %f, %f, %f\n", barData[i][0], barData[i][1], barData[i][2], barData[i][3], barData[i][4]);
-    // }
     maxX = barYLen + 12;
 
     // Create 2d array of unicode characters that will become the graph
     wchar_t graph[maxY][maxX];
-    for (i = 0; i < maxY; i++) { // Clear the array by setting every element to a blank space
-        for (j = 0; j < maxX; j++) {
+    for (i = 0; i < maxY; i++)
+    { // Clear the array by setting every element to a blank space
+        for (j = 0; j < maxX; j++)
+        {
             graph[i][j] = ' ';
         }
     }
 
     // Draw top and bottom borders
-    for (i=0; i<maxX; i++) {
+    for (i = 0; i < maxX; i++)
+    {
         graph[0][i] = 0x2500; // 0x2500 = ─
-        graph[maxY-1][i] = i%5==0 ? 0x253c : 0x2500;
+        graph[maxY - 1][i] = i % 5 == 0 ? 0x253c : 0x2500;
     }
     // Draw left and right borders
-    for (i=0; i<maxY; i++) {
-        graph[i][0] = i%5==0 ? 0x253c : 0x2502;
-        graph[i][maxX-1] = 0x2502;
+    for (i = 0; i < maxY; i++)
+    {
+        graph[i][0] = i % 5 == 0 ? 0x253c : 0x2502;
+        graph[i][maxX - 1] = 0x2502;
     }
     // Draw corners
-    graph[0][0] = 0x250c; // 0x250c = ┌
-    graph[0][maxX-1] = 0x2510; // 0x2510 = ┐
-    graph[maxY-1][0] = 0x2514; // 0x2514 = └
-    graph[maxY-1][maxX-1] = 0x2518; // 0x2518 = ┘
+    graph[0][0] = 0x250c;               // 0x250c = ┌
+    graph[0][maxX - 1] = 0x2510;        // 0x2510 = ┐
+    graph[maxY - 1][0] = 0x2514;        // 0x2514 = └
+    graph[maxY - 1][maxX - 1] = 0x2518; // 0x2518 = ┘
 
-    // Draw graph title
-    char upper[10];
-    for (i=0; i < strlen(argv[1]); i++) {
-        upper[i] = toupper(argv[1][i]);
+    // Don't even bother with graph title if there's not 40 days worth of data
+    if (daysBack >= 40) {
+        // Draw graph title
+        char upper[10];
+        for (i = 0; i < strlen(ticker); i++)
+        {
+            upper[i] = toupper(ticker[i]);
+        }
+        upper[i] = '\0';
+        char title[50] = "  ";
+        strcat(title, strDaysBack);
+        strcat(title, " Day Stock Price for $");
+        strcat(title, upper);
+        strcat(title, "  ");
+        graph[0][1] = 0x2524; // ┤
+        for (i = 0; i < strlen(title); i++)
+        {
+            graph[0][i + 2] = title[i];
+        }
+        graph[0][i + 2] = 0x251c; // ├
     }
-    upper[i] = '\0';
-    char title[50] = "  3 Month Stock Price for $";
-    strcat(title, upper);
-    strcat(title, "  ");
-    graph[0][1] = 0x2524; // ┤
-    for (i=0; i < strlen(title); i++) {
-        graph[0][i+2] = title[i];
-    }
-    graph[0][i+2] = 0x251c; // ├
 
     // Declare variables for drawing candlesticks
     j = 5;
@@ -255,60 +333,72 @@ int main(int argc, char *argv[]) {
     int tmp;
     // Declare array for keeping track of which columns saw an increase or a decrease in stock price
     int columnColors[maxX]; // 0 = white, 1 = red, 2 = green
-    for (i=0; i<maxX; i++) {
+    for (i = 0; i < maxX; i++)
+    {
         columnColors[i] = 0; // Initialize by setting every element to 0
     }
 
-    for (i=0; i < barYLen; i++){
-        // printf("%f\n", barDataRev[i][4]);
+    for (i = 0; i < barYLen; i++)
+    {
         // map high/low parts of the candlestick
         mhigh = map(barDataRev[i][2], atl, ath, high, low);
         mlow = map(barDataRev[i][1], atl, ath, high, low);
         // graph[mlow][j] = 0x2588;
-        for (vpos=mlow;vpos<=mhigh;vpos++) {
+        for (vpos = mlow; vpos <= mhigh; vpos++)
+        {
             graph[vpos][j] = 0x2502; // fill in the high/low part of the candlestick
         }
         // map open/close parts of the candlestick
         mhigh = map(barDataRev[i][0], atl, ath, high, low);
         mlow = map(barDataRev[i][3], atl, ath, high, low);
-        if (mlow > mhigh){ // If "mlow" is greater than "mhigh", that means the stock went down in price
+        if (mlow > mhigh)
+        { // If "mlow" is greater than "mhigh", that means the stock went down in price
             tmp = mlow;
             mlow = mhigh;
             mhigh = tmp;
             columnColors[j] = 1;
         }
-        else{ // Otherwise the stock increased in price
+        else
+        { // Otherwise the stock increased in price
             columnColors[j] = 2;
         }
-        // graph[mlow][j] = 0x2588;
-        for (vpos=mlow;vpos<=mhigh;vpos++) {
+        for (vpos = mlow; vpos <= mhigh; vpos++)
+        {
             graph[vpos][j] = 0x2588; // fill in the open/close part of the candlestick
         }
         j++;
     }
 
     // Draw graph
-    int margin = digits((int) (ath*100), 0) + 2;
+    int margin = digits((int)(ath * 100), 0) + 2;
 
     double price;
-    for (i=0; i<maxY; i++) {
+    for (i = 0; i < maxY; i++)
+    {
         printf("\x1b[0m");
         // Drawy y axis labels
-        if (i % 5 == 0 && i >= low && i <= high) {
+        if (i % 5 == 0 && i >= low && i <= high)
+        {
             price = map(i, low, high, ath, atl);
-            for (j=0; j<margin-digits((int)(price*100), 0)-2; j++) {
+            for (j = 0; j < margin - digits((int)(price * 100), 0) - 2; j++)
+            {
                 printf(" ");
             }
-            printf("$%.2f",price);
+            printf("$%.2f", price);
         }
-        else{
-            for (j=0; j<margin; j++){
+        else
+        {
+            for (j = 0; j < margin; j++)
+            {
                 printf(" ");
             }
         }
-        for (j = 0; j < maxX; j++) {
-            if (i != 0 && i != maxY-1){
-                switch (columnColors[j]) { // ASCII Escape sequences for setting print color
+        for (j = 0; j < maxX; j++)
+        {
+            if (i != 0 && i != maxY - 1)
+            {
+                switch (columnColors[j])
+                { // ASCII Escape sequences for setting print color
                 case 0:
                     printf("\x1b[0m"); // White
                     break;
@@ -318,10 +408,10 @@ int main(int argc, char *argv[]) {
                 case 2:
                     printf("\x1b[32m"); // Green
                     break;
-                
+
                 default:
                     printf("ERROR: Incorrect columncolor\n");
-                    return(1);
+                    return (1);
                 }
             }
             printf("%lc", graph[i][j]);
@@ -329,22 +419,27 @@ int main(int argc, char *argv[]) {
         printf("\n");
     }
     // Draw x axis labels
-    for (j=0; j<margin; j++){
+    for (j = 0; j < margin; j++)
+    {
         printf(" ");
     }
     printf("     "); // account for margin
-    for (j=0; j <barYLen; j++) {
-        if (j % 5 == 0) {
-            printf("%i", (int) barDataRev[j][4]);
-            if ((int) barDataRev[j][4] > 9) {
+    for (j = 0; j < barYLen; j++)
+    {
+        if (j % 5 == 0)
+        {
+            printf("%i", (int)barDataRev[j][4]);
+            if ((int)barDataRev[j][4] > 9)
+            {
                 printf("   ");
             }
-            else {
+            else
+            {
                 printf("    ");
             }
         }
     }
 
     printf("\n\n");
-    return(0);
+    return (0);
 }
