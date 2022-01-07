@@ -16,9 +16,9 @@ Example:
 - Run `export MARKETSTACK_API_KEY=<your access key>`. You can make this permanent by adding that command to your `.bashrc`.
 
 # Usage
-Run `./tstock TICKER` to get the 3 month chart of `$TICKER`. More options coming soon.
+Run `./tstock TICKER` to get the 3 month chart of `$TICKER`. Use `-d DAYS` to specify the number of days back you want to pull.
 You can get indexes by appending `.INDX`, for example, `./tstock DJI.INDX` to get the Dow Jones Industrial Average.
-You can get more information by looking at MarketWatch's API: https://marketstack.com/documentation
+More information on how to specify special tickers on MarketWatch's API Docs: https://marketstack.com/documentation
 
 # Notes
 - The free tier of the API is limited to 100 API calls per month.
