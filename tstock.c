@@ -21,9 +21,10 @@ void printHelp()
     printf("Usage: tstock [OPTIONS]... TICKER\n"
            "Prints a candlestick chart of TICKER in the terminal.\n"
            "Options:\n"
-           "    -d [days]       number of days to go back in API call\n"
+           "    -d [days]       Number of days to go back in API call. Defaults to 90.\n"
            "    -h              print this message and exit\n"
-           "    -v              enables verbosity\n");
+           "    -v              enables verbosity\n"
+           "    -y [lines]      Specify height of the chart. Defaults to 40.\n");
     return;
 }
 
@@ -38,13 +39,19 @@ int main(int argc, char *argv[])
     // Parse options
     int verbose = 0;
     int daysBack = 90;
+    char strDaysBack[10] = "90";
+    int maxY = 40;
     int opt; // TODO setup args for different API backends, day/year ranges
-    while ((opt = getopt(argc, argv, ":d:v")) != -1)
+    while ((opt = getopt(argc, argv, ":d:y:vh")) != -1)
     {
         switch (opt)
         {
         case 'd':
+            strcpy(strDaysBack, optarg);
             daysBack = atoi(optarg);
+            break;
+        case 'y':
+            maxY = atoi(optarg);
             break;
         case 'h':
             printHelp();
@@ -87,7 +94,6 @@ int main(int argc, char *argv[])
     setlocale(LC_CTYPE, ""); // Set locale for unicode characters
 
     int maxX = 100;
-    int maxY = 40;
     double ath = 0;
     double atl = 99999999;
     char data[1000000];
@@ -97,9 +103,6 @@ int main(int argc, char *argv[])
     double tempPrice;
     char ticker[50];
     strcpy(ticker, argv[optind]);
-
-    char strDaysBack[10];
-    sprintf(strDaysBack, "%d", daysBack);
 
     // Get current date and date of 2 months ago
     char d1[100];
@@ -140,7 +143,7 @@ int main(int argc, char *argv[])
 
     if (strlen(data) < 100)
     {
-        printf("Didn't recieve enoughj data from API. Is this stock covered by the API?\n");
+        printf("Didn't recieve enough data from API. Check your internet connection. Is this stock covered by the API?\n");
         if (verbose) printf("Recieved following data from API: %s\n", data);
         return (1);
     }
