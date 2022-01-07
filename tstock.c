@@ -13,7 +13,6 @@
 #include <unistd.h>
 
 double map(double x, double l1, double h1, double l2, double h2);
-int digits(int x, int y);
 int main(int argc, char *argv[]);
 void printHelp();
 
@@ -31,15 +30,6 @@ void printHelp()
 double map(double x, double l1, double h1, double l2, double h2)
 {
     return (((x - l1) / (h1 - l1)) * (h2 - l2)) + l2;
-}
-
-int digits(int x, int y)
-{ // call this function with (y=0)
-    if (x > 9)
-    {
-        return digits(x / 10, y + 1);
-    }
-    return y + 1;
 }
 
 int main(int argc, char *argv[])
@@ -65,9 +55,13 @@ int main(int argc, char *argv[])
             break;
         case ':':
             printf("Option -%c needs a value.\n", optopt);
+            printHelp();
+            return 0;
             break;
         case '?':
             printf("Unknown option `-%c'.\n", optopt);
+            printHelp();
+            return 0;
             break;
         }
     }
@@ -146,7 +140,8 @@ int main(int argc, char *argv[])
 
     if (strlen(data) < 100)
     {
-        printf("Didn't recieve data from API. Is this stock covered by the API?\n");
+        printf("Didn't recieve enoughj data from API. Is this stock covered by the API?\n");
+        if (verbose) printf("Recieved following data from API: %s\n", data);
         return (1);
     }
 
@@ -370,7 +365,9 @@ int main(int argc, char *argv[])
     }
 
     // Draw graph
-    int margin = digits((int)(ath * 100), 0) + 2;
+    char label[15];
+    sprintf(label, "$%.2f", ath);
+    int margin = strlen(label);
 
     double price;
     for (i = 0; i < maxY; i++)
@@ -380,7 +377,8 @@ int main(int argc, char *argv[])
         if (i % 5 == 0 && i >= low && i <= high)
         {
             price = map(i, low, high, ath, atl);
-            for (j = 0; j < margin - digits((int)(price * 100), 0) - 2; j++)
+            sprintf(label, "$%.2f", price);
+            for (j = 0; j < margin - strlen(label); j++)
             {
                 printf(" ");
             }
