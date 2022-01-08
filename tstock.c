@@ -12,10 +12,12 @@
 #include <math.h>
 #include <unistd.h>
 
+// Function declarations
+void printHelp();
 double map(double x, double l1, double h1, double l2, double h2);
 int main(int argc, char *argv[]);
-void printHelp();
 
+// Print the help message and exit
 void printHelp()
 {
     printf("Usage: tstock [OPTIONS]... TICKER\n"
@@ -28,6 +30,7 @@ void printHelp()
     return;
 }
 
+// Maps a number x from scale l1, h1 to relative scale in l2, h2
 double map(double x, double l1, double h1, double l2, double h2)
 {
     return (((x - l1) / (h1 - l1)) * (h2 - l2)) + l2;
@@ -35,13 +38,24 @@ double map(double x, double l1, double h1, double l2, double h2)
 
 int main(int argc, char *argv[])
 {
+    // Set locale for unicode characters
+    setlocale(LC_CTYPE, "");
+
+    // maxX, maxY determine the dimensions, in characters, of the graph
+    int maxX;      // This is set to the number of candles + 12
+    int maxY = 40; // Can be set with -y
+
+    // Variables that can be modified with flags
+    int verbose = 0;   // Toggled with -v
+    int daysBack = 90; // Set with -d
+    char strDaysBack[10] = "90";
+
+    // Index variables for loops
+    int i = 0;
+    int j = 0;
 
     // Parse options
-    int verbose = 0;
-    int daysBack = 90;
-    char strDaysBack[10] = "90";
-    int maxY = 40;
-    int opt; // TODO setup args for different API backends, day/year ranges
+    int opt; // TODO: setup args for different API backends
     while ((opt = getopt(argc, argv, ":d:y:vh")) != -1)
     {
         switch (opt)
@@ -79,7 +93,11 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // Check for API key
+    // Stores the ticker provided as argument by user
+    char ticker[50];
+    strcpy(ticker, argv[optind]);
+
+    // Check for API key stored in env variable $MARKETSTACK_API_KEY
     const char *apikey = getenv("MARKETSTACK_API_KEY");
     if (apikey == NULL)
     {
@@ -91,36 +109,27 @@ int main(int argc, char *argv[])
         return (1);
     }
 
-    setlocale(LC_CTYPE, ""); // Set locale for unicode characters
-
-    int maxX = 100;
-    double ath = 0;
-    double atl = 99999999;
-    char data[1000000];
-    int i = 0;
-    int j = 0;
-    char tempPriceStr[500];
-    double tempPrice;
-    char ticker[50];
-    strcpy(ticker, argv[optind]);
-
-    // Get current date and date of 2 months ago
+    // Strings storing dates. d1 is current date, d2 is date from the past specified by daysBack. YYYY-MM-DD format.
     char d1[100];
     char d2[100];
+    // Find date values for d1 and d2
     time_t now = time(NULL);
     struct tm *t1 = localtime(&now);
     strftime(d1, sizeof(d1) - 1, "%Y-%m-%d", t1);
-    now = time(NULL) - (86400 * daysBack); // defaults to 90 days * seconds in a day
+    now = time(NULL) - (86400 * daysBack); // defaults to 90 days * seconds in a day (86400)
     struct tm *t2 = localtime(&now);
     strftime(d2, sizeof(d2) - 1, "%Y-%m-%d", t2);
 
     // cURL the API and store the resulting characters in the variable "data"
     FILE *p;
     int ch;
-    char cmd[500] = "curl -s \"http://api.marketstack.com/v1/eod?access_key="; // construct the cURL command
-    strcat(cmd, apikey);
+    // Stores raw data returned from API
+    char data[1000000];
+    // Construct the curl command
+    char cmd[500] = "curl -s \"http://api.marketstack.com/v1/eod?access_key=";
+    strcat(cmd, apikey); //     Construct the URL like this because C is an ancient language with no better way of concatenating strings
     strcat(cmd, "&date_from=");
-    strcat(cmd, d2); //     Construct the URL like this because C is an ancient language with no better way of concatenating strings
+    strcat(cmd, d2);
     strcat(cmd, "&date_to=");
     strcat(cmd, d1);
     strcat(cmd, "&symbols=");
@@ -128,40 +137,55 @@ int main(int argc, char *argv[])
     strcat(cmd, "\"");
     if (verbose)
         printf("Running the following cURL command: %s\n", cmd);
+    // Run the cURL command with popen()
     p = popen(cmd, "r");
     if (p == NULL)
     {
-        puts("Unable to run curl command. Is cURL installed on this system?");
+        printf("Unable to run curl command. Is cURL installed on this system?\n");
         return (1);
     }
+
     while ((ch = fgetc(p)) != EOF)
     {
-        data[i] = ch;
+        data[i] = ch; // Copy data character by character into "data"
         i++;
     }
     pclose(p);
 
+    // If the recieved data is under 100 characters, something probably went wrong
     if (strlen(data) < 100)
     {
         printf("Didn't recieve enough data from API. Check your internet connection. Is this stock covered by the API?\n");
-        if (verbose) printf("Recieved following data from API: %s\n", data);
+        if (verbose)
+            printf("Recieved following data from API: %s\n", data);
         return (1);
     }
 
     if (verbose)
-        printf("Raw JSON data recieved:\n%s\nParsing...", data);
+        printf("Raw JSON data recieved:\n%s\nParsing...\n", data);
 
-    // This shouldn't exceed 30 rows, I'm only gonna pull 30 days worth of data
-    // Each row is of the shape: [Open, high, low, close, day]
-    double barData[1000][5];
-    int bari = 0;
-
+    // Code for parsing JSON data:
     // looking for either 0=open, 1=high, 2=low, 3=close, 4=day
     int looking = 0;
+    // Temporary location to store variables when parsing raw API data
+    char tempPriceStr[500];
+    double tempPrice;
+    // Temporary location for date while parsing
     char tmpDay[4];
+    // Final location for parsed bar data.
+    // Right now just pray that the user doesn't try to pull over 1000 days worth of data...
+    // Each row is of the shape: [Open, high, low, close, day]
+    double barData[1000][5];
+    // Index variable
+    int bari = 0;
+    // ath, atl, for keeping track of all-time-high and all-time-low prices, within the specified time window.
+    double ath = 0;
+    double atl = 99999999;
+
+    // Start parsing API data
     i = 0;
     while (data[i] != ']')
-    { // Scan through returned API data, extract certain parts
+    {
         if (data[i - 1] == '"' && data[i] == 'e' && data[i + 1] == 'r' && data[i + 2] == 'r' && data[i + 3] == 'o' && data[i + 4] == 'r')
         {
             printf("ERROR: The API retured an error: %s\n", data);
@@ -256,10 +280,11 @@ int main(int argc, char *argv[])
         i++;
     }
 
+    // The final value of bari will be the number of rows barData has. Store in barYLen
     int barYLen = bari;
     if (verbose)
         printf("Found %i days of OHLC data.\n", barYLen);
-    // Reverse the barData
+    // Reverse the barData, so that earliest is first
     double barDataRev[1000][5];
     for (i = 0; i < barYLen; i++)
     {
@@ -268,13 +293,15 @@ int main(int argc, char *argv[])
             barDataRev[i][j] = barData[barYLen - i - 1][j];
         }
     }
-
+    // Set X dimension of graph to number of candles + 12
     maxX = barYLen + 12;
 
     // Create 2d array of unicode characters that will become the graph
     wchar_t graph[maxY][maxX];
+
+    // Clear the array by setting every element to a blank space
     for (i = 0; i < maxY; i++)
-    { // Clear the array by setting every element to a blank space
+    {
         for (j = 0; j < maxX; j++)
         {
             graph[i][j] = ' ';
@@ -284,13 +311,13 @@ int main(int argc, char *argv[])
     // Draw top and bottom borders
     for (i = 0; i < maxX; i++)
     {
-        graph[0][i] = 0x2500; // 0x2500 = ─
-        graph[maxY - 1][i] = i % 5 == 0 ? 0x253c : 0x2500;
+        graph[0][i] = 0x2500;                              // 0x2500 = ─
+        graph[maxY - 1][i] = i % 5 == 0 ? 0x253c : 0x2500; // every fifth character, draw a "┼"
     }
     // Draw left and right borders
     for (i = 0; i < maxY; i++)
     {
-        graph[i][0] = i % 5 == 0 ? 0x253c : 0x2502;
+        graph[i][0] = i % 5 == 0 ? 0x253c : 0x2502; // every fifth character, draw a "┼"
         graph[i][maxX - 1] = 0x2502;
     }
     // Draw corners
@@ -300,7 +327,8 @@ int main(int argc, char *argv[])
     graph[maxY - 1][maxX - 1] = 0x2518; // 0x2518 = ┘
 
     // Don't even bother with graph title if there's not 40 days worth of data
-    if (daysBack >= 40) {
+    if (daysBack >= 40)
+    {
         // Draw graph title
         char upper[10];
         for (i = 0; i < strlen(ticker); i++)
@@ -322,13 +350,17 @@ int main(int argc, char *argv[])
     }
 
     // Declare variables for drawing candlesticks
-    j = 5;
+    // Lower and upper bounds of which rows to draw a candle stick
     int low = 4;
     int high = maxY - 4;
+    // mlow, mhigh = mapped low and mapped high. Prices that have been mapped to the scale of the Y axis.
     int mlow;
     int mhigh;
     int vpos;
+    // Temp variable for switching mlow and mhigh
     int tmp;
+    // Set index to start at 5 for padding inside chart
+    j = 5;
     // Declare array for keeping track of which columns saw an increase or a decrease in stock price
     int columnColors[maxX]; // 0 = white, 1 = red, 2 = green
     for (i = 0; i < maxX; i++)
@@ -341,16 +373,17 @@ int main(int argc, char *argv[])
         // map high/low parts of the candlestick
         mhigh = map(barDataRev[i][2], atl, ath, high, low);
         mlow = map(barDataRev[i][1], atl, ath, high, low);
-        // graph[mlow][j] = 0x2588;
+        // fill in the high/low part of the candlestick
         for (vpos = mlow; vpos <= mhigh; vpos++)
         {
-            graph[vpos][j] = 0x2502; // fill in the high/low part of the candlestick
+            graph[vpos][j] = 0x2502;
         }
         // map open/close parts of the candlestick
         mhigh = map(barDataRev[i][0], atl, ath, high, low);
         mlow = map(barDataRev[i][3], atl, ath, high, low);
+        // If "mlow" is greater than "mhigh", that means the stock went down in price
         if (mlow > mhigh)
-        { // If "mlow" is greater than "mhigh", that means the stock went down in price
+        {
             tmp = mlow;
             mlow = mhigh;
             mhigh = tmp;
@@ -360,23 +393,28 @@ int main(int argc, char *argv[])
         { // Otherwise the stock increased in price
             columnColors[j] = 2;
         }
+        // fill in the open/close part of the candlestick
         for (vpos = mlow; vpos <= mhigh; vpos++)
         {
-            graph[vpos][j] = 0x2588; // fill in the open/close part of the candlestick
+            graph[vpos][j] = 0x2588;
         }
         j++;
     }
 
-    // Draw graph
+    // Print graph to terminal
+    // String holding an axis label
     char label[15];
     sprintf(label, "$%.2f", ath);
+    // Margin between the y-axis of the graph and the left edge of the screen
     int margin = strlen(label);
-
+    // Variable for holding a numeric stock price
     double price;
+    // Start looping through "graph" and printing character by character
     for (i = 0; i < maxY; i++)
     {
+        // ANSI escape code for resetting font/color
         printf("\x1b[0m");
-        // Drawy y axis labels
+        // Print y axis labels and margin
         if (i % 5 == 0 && i >= low && i <= high)
         {
             price = map(i, low, high, ath, atl);
@@ -394,12 +432,13 @@ int main(int argc, char *argv[])
                 printf(" ");
             }
         }
+        // Print graph contents
         for (j = 0; j < maxX; j++)
         {
             if (i != 0 && i != maxY - 1)
             {
                 switch (columnColors[j])
-                { // ASCII Escape sequences for setting print color
+                { // ANSI Escape sequences for setting print color
                 case 0:
                     printf("\x1b[0m"); // White
                     break;
@@ -419,12 +458,12 @@ int main(int argc, char *argv[])
         }
         printf("\n");
     }
-    // Draw x axis labels
     for (j = 0; j < margin; j++)
     {
         printf(" ");
     }
     printf("     "); // account for margin
+    // Print x axis labels
     for (j = 0; j < barYLen; j++)
     {
         if (j % 5 == 0)
