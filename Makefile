@@ -1,2 +1,2 @@
-tc: tc.c
-	gcc -g -Wall -o tc tc.c
+tstock: tstock.c
+	gcc -g -Wall -o tstock tstock.c
