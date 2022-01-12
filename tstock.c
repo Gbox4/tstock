@@ -152,17 +152,17 @@ int main(int argc, char *argv[])
     }
     pclose(p);
 
-    // If the recieved data is under 100 characters, something probably went wrong
+    // If the received data is under 100 characters, something probably went wrong
     if (strlen(data) < 100)
     {
-        printf("Didn't recieve enough data from API. Check your internet connection. Is this stock covered by the API?\n");
+        printf("Didn't receive enough data from API. Check your internet connection. Is this stock covered by the API?\n");
         if (verbose)
-            printf("Recieved following data from API: %s\n", data);
+            printf("Received following data from API: %s\n", data);
         return (1);
     }
 
     if (verbose)
-        printf("Raw JSON data recieved:\n%s\nParsing...\n", data);
+        printf("Raw JSON data received:\n%s\nParsing...\n", data);
 
     // Code for parsing JSON data:
     // looking for either 0=open, 1=high, 2=low, 3=close, 4=day
@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
     {
         if (data[i - 1] == '"' && data[i] == 'e' && data[i + 1] == 'r' && data[i + 2] == 'r' && data[i + 3] == 'o' && data[i + 4] == 'r')
         {
-            printf("ERROR: The API retured an error: %s\n", data);
+            printf("ERROR: The API returned an error: %s\n", data);
             return (1);
         }
         switch (looking)
