@@ -10,15 +10,32 @@ Example:
 - cURL. That's it. Just make sure it's installed on your system.
 
 # Installation
-- Download the binary, or compile it from source yourself with `make tstock` 
+### AUR
+`tstock` is available on the AUR, just install it using your AUR helper. Exmaple using `yay`:
+```
+yay -S tstock
+```
+### Installing from source
+If you would instead like to compile the binary from source, clone the repo and run `make`:
+```
+git clone https://github.com/Gbox4/tstock.git
+cd tstock
+make
+```
+
+
+# Getting started
+### MarketStack API setup
+After installing `tstock`, you will need a MarketStack API key to pull the market data.
+
 - Make a free MarketStack API account at https://marketstack.com/signup/free
 - Login and find your API Access Key on the Dashboard page
 - Run `export MARKETSTACK_API_KEY=<your access key>`. You can make this permanent by adding that command to your `.bashrc`.
 
-# Usage
-Run `./tstock TICKER` to get the 3 month chart of `$TICKER`. Use `-d DAYS` to specify the number of days back you want to pull.
-You can get indexes by appending `.INDX`, for example, `./tstock DJI.INDX` to get the Dow Jones Industrial Average.
-More information on how to specify special tickers on MarketWatch's API Docs: https://marketstack.com/documentation
+### Usage
+Run `./tstock TICKER` to get the 3 month chart of `$TICKER`. Use `-d DAYS` to specify the number of days back you want to pull. Use `-y LINES` to specify the length of the chart's y axis.
+
+You can get indexes by appending `.INDX`. for example, `./tstock DJI.INDX` to get the Dow Jones Industrial Average. Find more information on how to specify special tickers on MarketWatch's API Docs: https://marketstack.com/documentation
 
 # Notes
 - The free tier of the API is limited to 100 API calls per month.
