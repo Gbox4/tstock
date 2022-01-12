@@ -6,8 +6,8 @@ pkgdesc="A simple command-line tool for viewing stock charts in the terminal."
 arch=(x86_64)
 url="https://github.com/Gbox4/tstock"
 license=('GPL')
-depends=()
-makedepends=(git make)
+depends=(glibc)
+makedepends=(git make glibc)
 optdepends=()
 provides=(tstock)
 source=("git+$url")
@@ -20,5 +20,5 @@ build() {
 }
 
 package() {
-	install -Dm755 "$srcdir/tstock" "$pkgdir/usr/bin/tstock"
+	install -Dm755 "$srcdir/tstock/tstock" "$pkgdir/usr/bin/tstock"
 }
