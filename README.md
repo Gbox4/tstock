@@ -11,7 +11,7 @@ Example:
 
 # Installation
 ### AUR
-`tstock` is available on the AUR, just install it using your AUR helper. Example using `yay`:
+`tstock` is available on the AUR. If you are on an Archlinux system, you can just install it using your AUR helper. Example using `yay`:
 ```
 yay -S tstock
 ```
