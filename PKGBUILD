@@ -13,23 +13,12 @@ provides=(tstock)
 source=("git+$url")
 md5sums=('SKIP')
 
-# prepare() {
-# 	cd "$pkgname-$pkgver"
-# 	patch -p1 -i "$srcdir/$pkgname-$pkgver.patch"
-# }
 
 build() {
-	cd "$pkgname-$pkgver"
-	./configure --prefix=/usr
+	cd "$pkgname"
 	make
 }
 
-check() {
-	cd "$pkgname-$pkgver"
-	make -k check
-}
-
 package() {
-	cd "$pkgname-$pkgver"
-	make DESTDIR="$pkgdir/" install
+	install -Dm755 "$srcdir/tstock" "$pkgdir/usr/bin/tstock"
 }
