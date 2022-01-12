@@ -1,5 +1,5 @@
 pkgbase = tstock
-	pkgdesc = A simple command-line tool for viewing stock charts in the terminal.
+	pkgdesc = A command-line tool to view stock charts in the terminal.
 	pkgver = 1.0
 	pkgrel = 1
 	url = https://github.com/Gbox4/tstock
