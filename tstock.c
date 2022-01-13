@@ -1,6 +1,5 @@
 // Gabe Banks
 // 1/3/22
-// APCSP CS50 Unit Final Project
 
 #include <stdio.h>
 #include <string.h>
