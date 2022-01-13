@@ -1,5 +1,7 @@
 # tstock - Check stocks from the terminal!
 
+📈 tstock is a tool to easily generate stock charts from the command line.
+
 Just type `tstock aapl` to get a 3 month candlestick chart of $AAPL in your terminal!
 
 Example:
