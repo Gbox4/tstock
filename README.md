@@ -46,7 +46,7 @@ After installing `tstock`, you will need a MarketStack API key to pull the marke
 
 Run `./tstock TICKER` to get the 3 month chart of `$TICKER`. Use `-d DAYS` to specify the number of days back you want to pull. Use `-y LINES` to specify the length of the chart's y axis.
 
-You can get indexes by appending `.INDX`. for example, `./tstock DJI.INDX` to get the Dow Jones Industrial Average. Find more information on how to specify special tickers on MarketWatch's API Docs: https://marketstack.com/documentation
+You can also enter international exchanges, by appending `.X<EXCHANGE>`. For example, if you want to view the CSI300, you can run `tstock 000300.XSHG`. Find more information on how to specify special tickers on MarketWatch's API Docs: https://marketstack.com/documentation
 
 # Notes
 
