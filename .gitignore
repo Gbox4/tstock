@@ -1,1 +1,3 @@
-tstock
+.vscode/
+env/
+__pycache__/
