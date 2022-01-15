@@ -11,9 +11,19 @@
 #include <math.h>
 #include <unistd.h>
 
+#include <curl/curl.h>
+#include <curl/urlapi.h>
+
+// Size of the buffer used for curl requests
+#define CURL_RAW_BUFF_SIZE 20000
+
 // Function declarations
 void printHelp();
 double map(double x, double l1, double h1, double l2, double h2);
+// Gets the raw data from the MarketStack API.
+char *getMarketStackData(const char *apiKey, const struct tm *dateFrom, const struct tm *dateTo, const char *ticker);
+// Simple CURL callback to append data to a buffer
+static size_t appendToBufferWriter(char *data, size_t size, size_t nmemb, char *buffer);
 int main(int argc, char *argv[]);
 
 // Print the help message and exit
@@ -33,6 +43,73 @@ void printHelp()
 double map(double x, double l1, double h1, double l2, double h2)
 {
     return (((x - l1) / (h1 - l1)) * (h2 - l2)) + l2;
+}
+
+static size_t appendToBufferWriter(char *data, size_t size, size_t nmemb, char *buffer)
+{
+    if (!buffer)
+        return (0);
+    // TODO: Does this work if there is a \0 in the data? Can there be a \0 in the data?
+    if (strlen(buffer) + size * nmemb > CURL_RAW_BUFF_SIZE)
+        exit(EXIT_FAILURE);
+    strncat(buffer, data, size * nmemb);
+    return size * nmemb;
+}
+
+char *getMarketStackData(const char *apiKey, const struct tm *dateFrom, const struct tm *dateTo, const char *ticker)
+{
+    // We allocate memory for the data returned by the request
+    char *curlBuffer = malloc(CURL_RAW_BUFF_SIZE);
+    memset(curlBuffer, 0, CURL_RAW_BUFF_SIZE);
+    CURL *curl = curl_easy_init();
+
+    if (!curl)
+        return (0);
+
+    // TODO: Handle errors from curl_easy_setopt
+
+    // Set curl buffer
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, appendToBufferWriter);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, curlBuffer);
+
+    // Generate the API url
+    CURLU *url = curl_url();
+    curl_url_set(url, CURLUPART_URL, "http://api.marketstack.com/v1/eod", 0);
+
+    char tokenParam[11 + 32 + 1] = "access_key="; // strlen("access_key=") == 11 && strlen("<MARKETSTACK_API_KEY>") == 32
+    strcat(tokenParam, apiKey);
+    curl_url_set(url, CURLUPART_QUERY, tokenParam, CURLU_APPENDQUERY);
+
+    // TODO: Maybe write a small string view struct for easier string manipulation? This is... not great...
+    char dateFromParam[10 + 10 + 1] = "date_from="; // The dates will always be 10 characters long with the provided format, and "date_from=" is also 10 characters
+    char dateFromRaw[10 + 1];
+    strftime(dateFromRaw, sizeof(dateFromRaw), "%Y-%m-%d", dateFrom);
+    strcat(dateFromParam, dateFromRaw);
+    curl_url_set(url, CURLUPART_QUERY, dateFromParam, CURLU_APPENDQUERY);
+
+    char dateToParam[10 + 8 + 1] = "date_to="; // The dates will always be 10 characters long with the provided format, and "date_to=" is 8 characters
+    char dateToRaw[10 + 1];
+    strftime(dateToRaw, sizeof(dateToRaw), "%Y-%m-%d", dateTo);
+    strcat(dateToParam, dateToRaw);
+    curl_url_set(url, CURLUPART_QUERY, dateToParam, CURLU_APPENDQUERY);
+
+    char symbolsParam[32] = "symbols=";
+    strcat(symbolsParam, ticker);
+    curl_url_set(url, CURLUPART_QUERY, symbolsParam, CURLU_APPENDQUERY);
+
+    char *finalUrl;
+    curl_url_get(url, CURLUPART_URL, &finalUrl, 0);
+    curl_url_cleanup(url);
+
+    // TODO: Check if verbose flag is set to log
+    fprintf(stdout, "Getting data from: %s\n", finalUrl);
+
+    curl_easy_setopt(curl, CURLOPT_URL, finalUrl);
+
+    CURLcode res = curl_easy_perform(curl);
+    (void) res; // TODO: Check res for errors
+    curl_easy_cleanup(curl);
+    return (curlBuffer);
 }
 
 int main(int argc, char *argv[])
@@ -108,48 +185,15 @@ int main(int argc, char *argv[])
         return (1);
     }
 
-    // Strings storing dates. d1 is current date, d2 is date from the past specified by daysBack. YYYY-MM-DD format.
-    char d1[100];
-    char d2[100];
-    // Find date values for d1 and d2
+    // Find date values
     time_t now = time(NULL);
-    struct tm *t1 = localtime(&now);
-    strftime(d1, sizeof(d1) - 1, "%Y-%m-%d", t1);
-    now = time(NULL) - (86400 * daysBack); // defaults to 90 days * seconds in a day (86400)
-    struct tm *t2 = localtime(&now);
-    strftime(d2, sizeof(d2) - 1, "%Y-%m-%d", t2);
+    // Here we dereference the value from localtime() to copy it so that the second call to localtime() doesn't overwrite the data from the first
+    struct tm tm_now = *localtime(&now);
+    time_t start = time(NULL) - (86400 * daysBack); // defaults to 90 days * seconds in a day (86400)
+    struct tm tm_start = *localtime(&start);
 
-    // cURL the API and store the resulting characters in the variable "data"
-    FILE *p;
-    int ch;
-    // Stores raw data returned from API
-    char data[1000000];
-    // Construct the curl command
-    char cmd[500] = "curl -s \"http://api.marketstack.com/v1/eod?access_key=";
-    strcat(cmd, apikey); //     Construct the URL like this because C is an ancient language with no better way of concatenating strings
-    strcat(cmd, "&date_from=");
-    strcat(cmd, d2);
-    strcat(cmd, "&date_to=");
-    strcat(cmd, d1);
-    strcat(cmd, "&symbols=");
-    strcat(cmd, ticker);
-    strcat(cmd, "\"");
-    if (verbose)
-        printf("Running the following cURL command: %s\n", cmd);
-    // Run the cURL command with popen()
-    p = popen(cmd, "r");
-    if (p == NULL)
-    {
-        printf("Unable to run curl command. Is cURL installed on this system?\n");
-        return (1);
-    }
-
-    while ((ch = fgetc(p)) != EOF)
-    {
-        data[i] = ch; // Copy data character by character into "data"
-        i++;
-    }
-    pclose(p);
+	// This will malloc some memory, we need to free `data` once we're done!
+    char *data = getMarketStackData(apikey, &tm_start, &tm_now, ticker);
 
     // If the received data is under 100 characters, something probably went wrong
     if (strlen(data) < 100)
@@ -278,6 +322,9 @@ int main(int argc, char *argv[])
         }
         i++;
     }
+
+    // We're no longer using the data, so we can free the memory back
+    free(data);
 
     // The final value of bari will be the number of rows barData has. Store in barYLen
     int barYLen = bari;
