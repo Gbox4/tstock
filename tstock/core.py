@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 import os
 import argparse
 import datetime
@@ -38,8 +36,12 @@ def get_api_key():
     return os.environ['MARKETSTACK_API_KEY']
 
 
-def main(parser):
+def main():
     """Main tstock script body."""
+
+    parser = get_args()
+    parse_args_exit(parser)
+
     padX = 5  # TODO: make padX an option
     padY = 4
     days_back = 90
@@ -199,6 +201,7 @@ def main(parser):
                 print(random.choice([
                     f"${ticker.upper()} to the moon! 🚀🚀🚀",
                     "Apes alone weak, apes together strong 🦍🦍🦍",
+                    f"${ticker.upper()} primary bull thesis: I like the stock."
                     "Stocks can only go down 100% but can go up infinite %. Stocks can literally only go up. Q.E.D.",
                 ]))
             else:
@@ -249,6 +252,4 @@ def get_args():
 
 
 if __name__ == "__main__":
-    parser = get_args()
-    parse_args_exit(parser)
-    main(parser)
+    main()
