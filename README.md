@@ -10,7 +10,7 @@ Example:
 
 # Dependencies
 
-- cURL. That's it. Just make sure it's installed on your system.
+- Python 3.6 or greater
 
 # Installation
 
@@ -22,14 +22,12 @@ Example:
 yay -S tstock
 ```
 
-### Installing from source
+### PyPI
 
-If you would instead like to compile the binary from source, clone the repo and run `make`:
+`tstock` is also available as a Python package. You can install it using `pip`:
 
 ```
-git clone https://github.com/Gbox4/tstock.git
-cd tstock
-make
+pip3 install tstock
 ```
 
 # Getting started
