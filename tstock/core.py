@@ -1,12 +1,8 @@
 import os
-import argparse
-import datetime
 import random
 import requests
 import numpy as np
-
-VERSION = "2.0.0"
-
+from .parse import *
 
 def translate(x, l1, h1, l2, h2):
     """Translate from one range to another.
@@ -25,18 +21,18 @@ def translate(x, l1, h1, l2, h2):
 
 
 def get_api_key():
-    """Gets the API key from the environment variable MARKETSTACK_API_KEY, raises an error if not found."""
-    if not 'MARKETSTACK_API_KEY' in list(os.environ.keys()):
+    """Gets the API key from the environment variable ALPHAVANTAGE_API_KEY, raises an error if not found."""
+    if not 'ALPHAVANTAGE_API_KEY' in list(os.environ.keys()):
         print("error: API key not detected! Follow these instructions to get your API Key working:\n" + \
-        "- Make a free MarketStack API account at https://marketstack.com/signup/free\n" + \
-        "- Login and find your API Access Key on the Dashboard page\n" + \
-        "- Run \"export MARKETSTACK_API_KEY=<your access key>\"." + \
+        "- Make a free AlphaVantage API account at https://www.alphavantage.co/support/#api-key\n" + \
+        "- After creating the account, you will see your free API key\n" + \
+        "- Run \"export ALPHAVANTAGE_API_KEY=<your access key>\"." + \
         "You can make this permanent by adding this line to your .bashrc\n")
         exit(1)
-    return os.environ['MARKETSTACK_API_KEY']
+    return os.environ['ALPHAVANTAGE_API_KEY']
 
 
-def main():
+def draw_graph():
     """Main tstock script body."""
 
     parser = get_args()
@@ -44,17 +40,21 @@ def main():
 
     padX = 5  # TODO: make padX an option
     padY = 4
-    days_back = 90
+    intervals_back = 71
     verbose = False
     chart_only = False
     wisdom = False
+    full = False
     maxY = 40
+    interval = 'day'
 
     # Parse arguments
     args = parser.parse_args()
     ticker = args.ticker[0]
-    if args.d:
-        days_back = int(args.d)
+    if args.b:
+        intervals_back = int(args.b)
+        if intervals_back > 100:
+            full = True
     if args.v:
         verbose = args.v
     if args.y:
@@ -63,38 +63,52 @@ def main():
         chart_only = args.c
     if args.w:
         wisdom = args.w
+    if args.t:
+        interval = args.t
+    if args.padx:
+        padX = args.padx
+    if args.pady:
+        padY = args.pady
+
+    interval_to_api = {
+        'day': 'TIME_SERIES_DAILY',
+        'week': 'TIME_SERIES_WEEKLY',
+        'month': 'TIME_SERIES_MONTHLY_ADJUSTED'
+    }
 
     # HTTP GET API data
     apikey = get_api_key()
-    date_to = datetime.datetime.today().strftime('%Y-%m-%d')
-    date_from = (datetime.datetime.today() -
-                 datetime.timedelta(days=days_back)).strftime('%Y-%m-%d')
-    request_url = f'http://api.marketstack.com/v1/eod?access_key={apikey}&date_from={date_from}&date_to={date_to}&symbols={ticker}'
-
+    request_url = f'https://www.alphavantage.co/query?function={interval_to_api[interval]}&symbol={ticker}&apikey={apikey}&outputsize={"full" if full else "compact"}'
     if verbose:
         print(
-            f"Days Back: {days_back}\nTicker: {ticker}\nAPI Key: {apikey}\nRequest URL: {request_url}\nY height: {maxY}"
+            f"Intervals Back: {intervals_back}\nTicker: {ticker}\nAPI Key: {apikey}\nRequest URL: {request_url}\nY height: {maxY}\nInterval: {interval}\n" + \
+            f"Wisdom: {wisdom}\nChart only: {chart_only}"
         )
 
     r = requests.get(request_url).json()
-    if 'error' in list(r.keys()):
+    if 'Error Message' in list(r.keys()):
         print(f"error: The API returned the following error:\n{r}")
         exit(1)
-    data = r['data']
+    data = r[list(r.keys())[1]]
 
     # Parse API data
-    candlesticks = []
-    for d in data:
+    candlesticks = []   
+    for k, v in data.items():
         candlesticks.append(
-            (d['open'], d['high'], d['low'], d['close'], d['date'][8:10]))
+            [float(v['1. open']), float(v['2. high']), float(v['3. low']), float(v['4. close']), -1])
+        if interval == 'day' or interval == 'week':
+            candlesticks[-1][4] = int(k[8:])
+        elif interval == 'month':
+            candlesticks[-1][4] = int(k[5:7])
+        if len(candlesticks) == intervals_back:
+            break
 
     candlesticks = list(reversed(candlesticks))
     maxX = len(candlesticks) + padX * 2 + 2
 
     # Create the chart
     chart = np.array([[" " for x in range(maxX)] for y in range(maxY)])
-    column_colors = ["\x1b[0m" for x in range(maxX)
-                     ]  # Stores ANSI escape sequences for printing color
+    column_colors = ["\x1b[0m" for x in range(maxX)]  # Stores ANSI escape sequences for printing color
     # Draw borders
     chart[0, :] = "─"
     chart[-1, :] = "─"
@@ -105,7 +119,7 @@ def main():
     chart[-1, 0] = "└"
     chart[-1, -1] = "┘"
     # Draw graph title, if there are there enough worth of data to contain it
-    title = f"┤  {days_back} Day Stock Price for ${ticker.upper()}  ├"
+    title = f"┤  {intervals_back} {interval.capitalize()} Stock Price for ${ticker.upper()}  ├"
     if maxX >= len(title) + 2:
         for i, c in enumerate(title):
             chart[0, i + 1] = c
@@ -212,44 +226,3 @@ def main():
                     "Short squeeze any time now 💎🙌"
                 ]))
         print()
-
-def parse_args_exit(parser):
-    """Process args that exit."""
-    args = parser.parse_args()
-
-    if args.version:
-        parser.exit(0, f"tstock {VERSION}\n")
-
-
-def get_args():
-    """Get the script arguments."""
-    description = "tstock - check stocks from the terminal"
-    arg = argparse.ArgumentParser(description=description)
-
-    arg.add_argument("ticker",
-                     metavar="TICKER",
-                     nargs=1,
-                     help="Specify which ticker's data to pull.")
-
-    arg.add_argument(
-        "-d",
-        metavar="days", type=int,
-        help="Number of days to go back in API call. Defaults to 90.")
-
-    arg.add_argument("-y",
-                     metavar="lines", type=int,
-                     help="Specify height of the chart. Defaults to 40.")
-
-    arg.add_argument("-v", action="store_true", help="Toggles verbosity.")
-    arg.add_argument("-c", action="store_true", help="Prints the chart only. Overrides -w.")
-    arg.add_argument("-w", action="store_true", help="Prints some extra words of 'wisdom'.")
-
-    arg.add_argument("--version",
-                     action="store_true",
-                     help="Print tstock version.")
-
-    return arg
-
-
-if __name__ == "__main__":
-    main()

@@ -1,8 +1,9 @@
+from tstock.settings import __version__
 from setuptools import setup
 
 setup(
     name="tstock",
-    version="2.0.0",
+    version=__version__,
     author="Gabe Banks",
     author_email="gabriel.t.banks@gmail.com",
     description="A command line tool to view stock charts in the terminal.",
@@ -16,5 +17,5 @@ setup(
         "Operating System :: OS Independent"
     ],
     packages=["tstock"],
-    entry_points={"console_scripts": ["tstock=tstock:main"]},
+    entry_points={"console_scripts": ["tstock=tstock:draw_graph"]},
     python_requires=">=3.6")
