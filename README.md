@@ -48,4 +48,4 @@ You can get indexes by appending `.INDX`. for example, `./tstock DJI.INDX` to ge
 
 # Notes
 
-- The free tier of the API is limited to 100 API calls per month.
+- The free tier of the API is limited to 500 API calls per day, 5 calls per minute.
