@@ -1,8 +1,10 @@
 import os
+import sys
 import random
 import requests
 import numpy as np
 from .parse import *
+
 
 def translate(x, l1, h1, l2, h2):
     """Translate from one range to another.
@@ -31,23 +33,42 @@ def get_api_key():
         exit(1)
     return os.environ['ALPHAVANTAGE_API_KEY']
 
-def generate_candlesticks(opts):
-    interval_to_api = {
-        'day': 'TIME_SERIES_DAILY',
-        'week': 'TIME_SERIES_WEEKLY',
-        'month': 'TIME_SERIES_MONTHLY'
-    }
 
+def get_request_url(opts):
+    """Generates an API request URL based off of options"""
     interval = opts["interval"]
-    intervals_back = opts['intervals_back']
     ticker = opts["ticker"]
-    full = intervals_back > 100
-    verbose = opts["verbose"]
-
+    equity = opts["equity"]
+    intervals_back = opts['intervals_back']
     apikey = get_api_key()
-    request_url = f'https://www.alphavantage.co/query?function={interval_to_api[interval]}&symbol={ticker}&apikey={apikey}&outputsize={"full" if full else "compact"}'
+    full = "full" if intervals_back > 100 else "compact"
+    intraday = 'min' in interval
+    verbose = opts["verbose"]
+    
+    if equity == "stock":
+        if interval == 'day':
+            api_function = 'TIME_SERIES_DAILY'
+        elif interval == 'week':
+            api_function = 'TIME_SERIES_WEEKLY'
+        elif interval == 'month':
+            api_function = 'TIME_SERIES_MONTHLY'
+        elif intraday:
+            api_function = 'TIME_SERIES_INTRADAY'
+    
+    request_url = f'https://www.alphavantage.co/query?function={api_function}&symbol={ticker}&apikey={apikey}&outputsize={full}'
+
+    if intraday:
+        request_url += f"&interval={interval}"
+
     if verbose:
         print(f"API Key: {apikey}\nRequest URL: {request_url}")
+    return request_url
+    
+def get_candlesticks(opts):
+    """Creates a list of candlesticks of the shape [O, H, L, C, D]."""
+    interval = opts["interval"]
+    intervals_back = opts['intervals_back']
+    request_url = get_request_url(opts)
 
     r = requests.get(request_url).json()
     if 'Error Message' in list(r.keys()):
@@ -56,15 +77,24 @@ def generate_candlesticks(opts):
     data = r[list(r.keys())[1]]
 
     # Parse API data
-    candlesticks = []   
+    candlesticks = []
     for k, v in data.items():
-        candlesticks.append(
-            [float(v['1. open']), float(v['2. high']), float(v['3. low']), float(v['4. close']), -1])
-        if opts['interval'] == 'day' or opts['interval'] == 'week':
+        candlesticks.append([
+            float(v['1. open']),
+            float(v['2. high']),
+            float(v['3. low']),
+            float(v['4. close']), -1
+        ])
+        if interval in ['day', 'week']:
             candlesticks[-1][4] = int(k[8:])
-        elif opts['interval'] == 'month':
+        elif interval == 'month':
             candlesticks[-1][4] = int(k[5:7])
-        if len(candlesticks) == opts['intervals_back']:
+        elif interval in ['1min', '5min']:
+            candlesticks[-1][4] = int(k[14:16])
+        elif interval in ['15min', '30min', '60min']:
+            candlesticks[-1][4] = int(k[11:13])
+            
+        if len(candlesticks) == intervals_back:
             break
 
     candlesticks = list(reversed(candlesticks))
@@ -84,6 +114,7 @@ def draw_graph(opts):
     verbose = opts["verbose"]
     wisdom = opts["wisdom"]
     chart_only = opts["chart_only"]
+    intraday = 'min' in interval
 
     if verbose:
         print(
@@ -91,13 +122,14 @@ def draw_graph(opts):
             f"Wisdom: {wisdom}\nChart only: {chart_only}"
         )
 
-    candlesticks = generate_candlesticks(opts)
+    candlesticks = get_candlesticks(opts)
 
     max_x = len(candlesticks) + pad_x * 2 + 2
 
     # Create the chart
     chart = np.array([[" " for x in range(max_x)] for y in range(max_y)])
-    column_colors = ["\x1b[0m" for x in range(max_x)]  # Stores ANSI escape sequences for printing color
+    column_colors = ["\x1b[0m" for x in range(max_x)
+                     ]  # Stores ANSI escape sequences for printing color
     # Draw borders
     chart[0, :] = "─"
     chart[-1, :] = "─"
@@ -107,8 +139,10 @@ def draw_graph(opts):
     chart[0, -1] = "┐"
     chart[-1, 0] = "└"
     chart[-1, -1] = "┘"
+
+    spacer = "x" if intraday else " "
     # Draw graph title, if there are there enough worth of data to contain it
-    title = f"┤  {intervals_back} {interval.capitalize()} Stock Price for ${ticker.upper()}  ├"
+    title = f"┤  {intervals_back}{spacer}{interval.capitalize()} Stock Price for ${ticker.upper()}  ├"
     if max_x >= len(title) + 2:
         for i, c in enumerate(title):
             chart[0, i + 1] = c
@@ -198,23 +232,27 @@ def draw_graph(opts):
     if not chart_only:
         #Print additional info
         print("Last price:\t${:,.2f}".format(candlesticks[-1][3]))
-        print(f"% change:\t{round(100*(candlesticks[-1][3]-candlesticks[0][0])/candlesticks[-1][3],2)}%")
+        print(
+            f"% change:\t{round(100*(candlesticks[-1][3]-candlesticks[0][0])/candlesticks[-1][3],2)}%"
+        )
         if wisdom:
             if candlesticks[-1][3] > candlesticks[0][0]:
-                print(random.choice([
-                    f"${ticker.upper()} to the moon! 🚀🚀🚀",
-                    "Apes alone weak, apes together strong 🦍🦍🦍",
-                    f"${ticker.upper()} primary bull thesis: I like the stock."
-                    "Stocks can only go down 100% but can go up infinite %. Stocks can literally only go up. Q.E.D.",
-                ]))
+                print(
+                    random.choice([
+                        f"${ticker.upper()} to the moon! 🚀🚀🚀",
+                        "Apes alone weak, apes together strong 🦍🦍🦍",
+                        f"${ticker.upper()} primary bull thesis: I like the stock."
+                        "Stocks can only go down 100% but can go up infinite %. Stocks can literally only go up. Q.E.D.",
+                    ]))
             else:
-                print(random.choice([
-                    "Losses aren't real 'till you sell 💎🙌",
-                    "Literally cannot go tits up 💎🙌",
-                    "GUH.",
-                    "Short squeeze any time now 💎🙌"
-                ]))
+                print(
+                    random.choice([
+                        "Losses aren't real 'till you sell 💎🙌",
+                        "Literally cannot go tits up 💎🙌", "GUH.",
+                        "Short squeeze any time now 💎🙌"
+                    ]))
         print()
+
 
 def main():
     parser = get_args()
