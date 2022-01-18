@@ -17,5 +17,5 @@ setup(
         "Operating System :: OS Independent"
     ],
     packages=["tstock"],
-    entry_points={"console_scripts": ["tstock=tstock:main"]},
+    entry_points={"console_scripts": ["tstock=tstock.__main__:main"]},
     python_requires=">=3.6")
