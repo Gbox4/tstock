@@ -31,59 +31,23 @@ def get_api_key():
         exit(1)
     return os.environ['ALPHAVANTAGE_API_KEY']
 
-
-def draw_graph():
-    """Main tstock script body."""
-
-    parser = get_args()
-    parse_args_exit(parser)
-
-    padX = 5  # TODO: make padX an option
-    padY = 4
-    intervals_back = 71
-    verbose = False
-    chart_only = False
-    wisdom = False
-    full = False
-    maxY = 40
-    interval = 'day'
-
-    # Parse arguments
-    args = parser.parse_args()
-    ticker = args.ticker[0]
-    if args.b:
-        intervals_back = int(args.b)
-        if intervals_back > 100:
-            full = True
-    if args.v:
-        verbose = args.v
-    if args.y:
-        maxY = args.y
-    if args.c:
-        chart_only = args.c
-    if args.w:
-        wisdom = args.w
-    if args.t:
-        interval = args.t
-    if args.padx:
-        padX = args.padx
-    if args.pady:
-        padY = args.pady
-
+def generate_candlesticks(opts):
     interval_to_api = {
         'day': 'TIME_SERIES_DAILY',
         'week': 'TIME_SERIES_WEEKLY',
-        'month': 'TIME_SERIES_MONTHLY_ADJUSTED'
+        'month': 'TIME_SERIES_MONTHLY'
     }
 
-    # HTTP GET API data
+    interval = opts["interval"]
+    intervals_back = opts['intervals_back']
+    ticker = opts["ticker"]
+    full = intervals_back > 100
+    verbose = opts["verbose"]
+
     apikey = get_api_key()
     request_url = f'https://www.alphavantage.co/query?function={interval_to_api[interval]}&symbol={ticker}&apikey={apikey}&outputsize={"full" if full else "compact"}'
     if verbose:
-        print(
-            f"Intervals Back: {intervals_back}\nTicker: {ticker}\nAPI Key: {apikey}\nRequest URL: {request_url}\nY height: {maxY}\nInterval: {interval}\n" + \
-            f"Wisdom: {wisdom}\nChart only: {chart_only}"
-        )
+        print(f"API Key: {apikey}\nRequest URL: {request_url}")
 
     r = requests.get(request_url).json()
     if 'Error Message' in list(r.keys()):
@@ -96,19 +60,44 @@ def draw_graph():
     for k, v in data.items():
         candlesticks.append(
             [float(v['1. open']), float(v['2. high']), float(v['3. low']), float(v['4. close']), -1])
-        if interval == 'day' or interval == 'week':
+        if opts['interval'] == 'day' or opts['interval'] == 'week':
             candlesticks[-1][4] = int(k[8:])
-        elif interval == 'month':
+        elif opts['interval'] == 'month':
             candlesticks[-1][4] = int(k[5:7])
-        if len(candlesticks) == intervals_back:
+        if len(candlesticks) == opts['intervals_back']:
             break
 
     candlesticks = list(reversed(candlesticks))
-    maxX = len(candlesticks) + padX * 2 + 2
+
+    return candlesticks
+
+
+def draw_graph(opts):
+    """Main tstock script body."""
+
+    ticker = opts["ticker"]
+    interval = opts["interval"]
+    intervals_back = opts["intervals_back"]
+    max_y = opts["max_y"]
+    pad_x = opts["pad_x"]
+    pad_y = opts["pad_y"]
+    verbose = opts["verbose"]
+    wisdom = opts["wisdom"]
+    chart_only = opts["chart_only"]
+
+    if verbose:
+        print(
+            f"Intervals Back: {intervals_back}\nTicker: {ticker}\nY height: {max_y}\nInterval: {interval}\n" + \
+            f"Wisdom: {wisdom}\nChart only: {chart_only}"
+        )
+
+    candlesticks = generate_candlesticks(opts)
+
+    max_x = len(candlesticks) + pad_x * 2 + 2
 
     # Create the chart
-    chart = np.array([[" " for x in range(maxX)] for y in range(maxY)])
-    column_colors = ["\x1b[0m" for x in range(maxX)]  # Stores ANSI escape sequences for printing color
+    chart = np.array([[" " for x in range(max_x)] for y in range(max_y)])
+    column_colors = ["\x1b[0m" for x in range(max_x)]  # Stores ANSI escape sequences for printing color
     # Draw borders
     chart[0, :] = "─"
     chart[-1, :] = "─"
@@ -120,7 +109,7 @@ def draw_graph():
     chart[-1, -1] = "┘"
     # Draw graph title, if there are there enough worth of data to contain it
     title = f"┤  {intervals_back} {interval.capitalize()} Stock Price for ${ticker.upper()}  ├"
-    if maxX >= len(title) + 2:
+    if max_x >= len(title) + 2:
         for i, c in enumerate(title):
             chart[0, i + 1] = c
     # Find all time high and all time low
@@ -132,10 +121,10 @@ def draw_graph():
         if c[2] < atl:
             atl = c[2]
     # Draw candlesticks
-    start_i = 1 + padX
-    end_i = maxX - 1 - padX
-    y_axis_low = padY
-    y_axis_high = maxY - padY
+    start_i = 1 + pad_x
+    end_i = max_x - 1 - pad_x
+    y_axis_low = pad_y
+    y_axis_high = max_y - pad_y
     for i, c in enumerate(candlesticks):
         shifted_i = i + start_i
         # Stuff gets a little confusing here because the graph has to be y-inverted. "high" is referring to a high price, but needs to be flipped to a low index.
@@ -166,7 +155,7 @@ def draw_graph():
                 chart[y, shifted_i] = "█"
 
     # Setup x-axis labels
-    x_axis_labels = " " * (1 + padX)
+    x_axis_labels = " " * (1 + pad_x)
     for i in range(start_i, end_i):
         shifted_i = i - start_i
         if (shifted_i) % 5 == 0:
@@ -175,12 +164,12 @@ def draw_graph():
                 x_axis_labels += f"{candlesticks[shifted_i][4]}   "
             else:
                 x_axis_labels += f"{int(candlesticks[shifted_i][4])}    "
-    x_axis_labels += " " * (maxX - len(x_axis_labels))
+    x_axis_labels += " " * (max_x - len(x_axis_labels))
 
     # Setup y-axis labels
     y_axis_labels = []
     margin = len("${:,.2f}".format(ath))
-    for i in range(maxY):
+    for i in range(max_y):
         if i >= y_axis_low and i <= y_axis_high:
             shifted_i = y_axis_high - i
             if shifted_i % 4 == 0:
@@ -226,3 +215,10 @@ def draw_graph():
                     "Short squeeze any time now 💎🙌"
                 ]))
         print()
+
+def main():
+    parser = get_args()
+    parse_args_exit(parser)
+
+    opts = parse_args(parser)
+    draw_graph(opts)

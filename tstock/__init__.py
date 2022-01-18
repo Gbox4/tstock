@@ -1,1 +1,1 @@
-from .core import draw_graph
+from .core import main

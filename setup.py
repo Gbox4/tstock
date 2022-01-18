@@ -17,5 +17,5 @@ setup(
         "Operating System :: OS Independent"
     ],
     packages=["tstock"],
-    entry_points={"console_scripts": ["tstock=tstock:draw_graph"]},
+    entry_points={"console_scripts": ["tstock=tstock:main"]},
     python_requires=">=3.6")
