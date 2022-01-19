@@ -1,12 +1,9 @@
 import os
-import argparse
-import datetime
+import sys
 import random
 import requests
 import numpy as np
-
-VERSION = "2.0.0"
-
+from .parse import *
 
 def translate(x, l1, h1, l2, h2):
     """Translate from one range to another.
@@ -21,80 +18,163 @@ def translate(x, l1, h1, l2, h2):
     Returns:
         y (number) - x mapped to range 2.
     """
-    return (((x - l1) / (h1 - l1)) * (h2 - l2)) + l2
+    try:
+        return (((x - l1) / (h1 - l1)) * (h2 - l2)) + l2
+    except ZeroDivisionError:
+        print("Error: Price in this timeframe has not changed by more than $0.00001. This is more specific than the API can keep track.")
+        sys.exit(1)
 
 
 def get_api_key():
-    """Gets the API key from the environment variable MARKETSTACK_API_KEY, raises an error if not found."""
-    if not 'MARKETSTACK_API_KEY' in list(os.environ.keys()):
+    """Gets the API key from the environment variable ALPHAVANTAGE_API_KEY, raises an error if not found."""
+    if not 'ALPHAVANTAGE_API_KEY' in list(os.environ.keys()):
         print("error: API key not detected! Follow these instructions to get your API Key working:\n" + \
-        "- Make a free MarketStack API account at https://marketstack.com/signup/free\n" + \
-        "- Login and find your API Access Key on the Dashboard page\n" + \
-        "- Run \"export MARKETSTACK_API_KEY=<your access key>\"." + \
+        "- Make a free AlphaVantage API account at https://www.alphavantage.co/support/#api-key\n" + \
+        "- After creating the account, you will see your free API key\n" + \
+        "- Run \"export ALPHAVANTAGE_API_KEY=<your access key>\"." + \
         "You can make this permanent by adding this line to your .bashrc\n")
         exit(1)
-    return os.environ['MARKETSTACK_API_KEY']
+    return os.environ['ALPHAVANTAGE_API_KEY']
 
 
-def main():
-    """Main tstock script body."""
-
-    parser = get_args()
-    parse_args_exit(parser)
-
-    padX = 5  # TODO: make padX an option
-    padY = 4
-    days_back = 90
-    verbose = False
-    chart_only = False
-    wisdom = False
-    maxY = 40
-
-    # Parse arguments
-    args = parser.parse_args()
-    ticker = args.ticker[0]
-    if args.d:
-        days_back = int(args.d)
-    if args.v:
-        verbose = args.v
-    if args.y:
-        maxY = args.y
-    if args.c:
-        chart_only = args.c
-    if args.w:
-        wisdom = args.w
-
-    # HTTP GET API data
+def get_request_url(opts):
+    """Generates an API request URL based off of options."""
+    interval = opts["interval"]
+    ticker = opts["ticker"]
+    equity = opts["equity"]
+    intervals_back = opts['intervals_back']
     apikey = get_api_key()
-    date_to = datetime.datetime.today().strftime('%Y-%m-%d')
-    date_from = (datetime.datetime.today() -
-                 datetime.timedelta(days=days_back)).strftime('%Y-%m-%d')
-    request_url = f'http://api.marketstack.com/v1/eod?access_key={apikey}&date_from={date_from}&date_to={date_to}&symbols={ticker}'
+    full = "full" if intervals_back > 100 else "compact"
+    intraday = 'min' in interval
+    verbose = opts["verbose"]
+    currency = opts["currency"]
+    
+    if equity == "stock":
+        if interval == 'day':
+            api_function = 'TIME_SERIES_DAILY'
+        elif interval == 'week':
+            api_function = 'TIME_SERIES_WEEKLY'
+        elif interval == 'month':
+            api_function = 'TIME_SERIES_MONTHLY'
+        elif intraday:
+            api_function = 'TIME_SERIES_INTRADAY'
+    
+        request_url = f'https://www.alphavantage.co/query?function={api_function}&symbol={ticker}&apikey={apikey}&outputsize={full}'
+
+        if intraday:
+            request_url += f"&interval={interval}"
+
+    elif equity == "crypto":
+        if interval == 'day':
+            api_function = 'DIGITAL_CURRENCY_DAILY'
+        elif interval == 'week':
+            api_function = 'DIGITAL_CURRENCY_WEEKLY'
+        elif interval == 'month':
+            api_function = 'DIGITAL_CURRENCY_MONTHLY'
+        elif intraday:
+            api_function = 'CRYPTO_INTRADAY'
+    
+        request_url = f'https://www.alphavantage.co/query?function={api_function}&symbol={ticker}&apikey={apikey}&market={currency}'
+
+        if intraday:
+            request_url += f"&interval={interval}&outputsize={full}"
+
+    elif equity == "forex":
+        print("Sorry, forex markets are not yet supported.")
+        sys.exit(1)
 
     if verbose:
-        print(
-            f"Days Back: {days_back}\nTicker: {ticker}\nAPI Key: {apikey}\nRequest URL: {request_url}\nY height: {maxY}"
-        )
+        print(f"API Key: {apikey}\nRequest URL: {request_url}")
+    return request_url
+    
+def get_candlesticks(opts):
+    """Creates a list of candlesticks of the shape [O, H, L, C, D]."""
+    interval = opts["interval"]
+    intervals_back = opts['intervals_back']
+    equity = opts['equity']
+    intraday = 'min' in interval
 
+    request_url = get_request_url(opts)
     r = requests.get(request_url).json()
-    if 'error' in list(r.keys()):
+    if 'Error Message' in list(r.keys()):
         print(f"error: The API returned the following error:\n{r}")
         exit(1)
-    data = r['data']
+    data = r[list(r.keys())[1]]
 
     # Parse API data
     candlesticks = []
-    for d in data:
-        candlesticks.append(
-            (d['open'], d['high'], d['low'], d['close'], d['date'][8:10]))
+    if equity == "stock":
+        for k, v in data.items():
+            candlesticks.append([
+                float(v['1. open']),
+                float(v['2. high']),
+                float(v['3. low']),
+                float(v['4. close']), -1
+            ])
+            if interval in ['day', 'week']:
+                candlesticks[-1][4] = int(k[8:])
+            elif interval == 'month':
+                candlesticks[-1][4] = int(k[5:7])
+            elif interval in ['1min', '5min']:
+                candlesticks[-1][4] = int(k[14:16])
+            elif interval in ['15min', '30min', '60min']:
+                candlesticks[-1][4] = int(k[11:13])
+            if len(candlesticks) == intervals_back:
+                break
+    elif equity == "crypto":
+        for k, v in data.items():
+            prices = [ float(price) for name, price in v.items() ]
+            if intraday:
+                candlesticks.append([
+                    float(prices[0]),
+                    float(prices[1]),
+                    float(prices[2]),
+                    float(prices[3]), -1
+                ])
+            else:
+                candlesticks.append([
+                    float(prices[0]),
+                    float(prices[2]),
+                    float(prices[4]),
+                    float(prices[6]), -1
+                ])
+            if interval in ['day', 'week']:
+                candlesticks[-1][4] = int(k[8:])
+            elif interval == 'month':
+                candlesticks[-1][4] = int(k[5:7])
+            elif interval in ['1min', '5min']:
+                candlesticks[-1][4] = int(k[14:16])
+            elif interval in ['15min', '30min', '60min']:
+                candlesticks[-1][4] = int(k[11:13])
+            if len(candlesticks) == intervals_back:
+                break
+
+    # TODO: add support for forex markets
 
     candlesticks = list(reversed(candlesticks))
-    maxX = len(candlesticks) + padX * 2 + 2
+
+    return candlesticks
+
+
+def draw_graph(opts):
+    """Main tstock script body."""
+
+    ticker = opts["ticker"]
+    interval = opts["interval"]
+    intervals_back = opts["intervals_back"]
+    max_y = opts["max_y"]
+    pad_x = opts["pad_x"]
+    pad_y = opts["pad_y"]
+    wisdom = opts["wisdom"]
+    chart_only = opts["chart_only"]
+    intraday = 'min' in interval
+    candlesticks = get_candlesticks(opts)
+
+    max_x = len(candlesticks) + pad_x * 2 + 2
 
     # Create the chart
-    chart = np.array([[" " for x in range(maxX)] for y in range(maxY)])
-    column_colors = ["\x1b[0m" for x in range(maxX)
-                     ]  # Stores ANSI escape sequences for printing color
+    chart = np.array([[" " for x in range(max_x)] for y in range(max_y)])
+    column_colors = ["\x1b[0m" for x in range(max_x)]  # Stores ANSI escape sequences for printing color
     # Draw borders
     chart[0, :] = "─"
     chart[-1, :] = "─"
@@ -104,9 +184,11 @@ def main():
     chart[0, -1] = "┐"
     chart[-1, 0] = "└"
     chart[-1, -1] = "┘"
+
+    spacer = "x" if intraday else " "
     # Draw graph title, if there are there enough worth of data to contain it
-    title = f"┤  {days_back} Day Stock Price for ${ticker.upper()}  ├"
-    if maxX >= len(title) + 2:
+    title = f"┤  {intervals_back}{spacer}{interval.capitalize()} Price for ${ticker.upper()}  ├"
+    if max_x >= len(title) + 2:
         for i, c in enumerate(title):
             chart[0, i + 1] = c
     # Find all time high and all time low
@@ -118,10 +200,10 @@ def main():
         if c[2] < atl:
             atl = c[2]
     # Draw candlesticks
-    start_i = 1 + padX
-    end_i = maxX - 1 - padX
-    y_axis_low = padY
-    y_axis_high = maxY - padY
+    start_i = 1 + pad_x
+    end_i = max_x - 1 - pad_x
+    y_axis_low = pad_y
+    y_axis_high = max_y - pad_y
     for i, c in enumerate(candlesticks):
         shifted_i = i + start_i
         # Stuff gets a little confusing here because the graph has to be y-inverted. "high" is referring to a high price, but needs to be flipped to a low index.
@@ -152,7 +234,7 @@ def main():
                 chart[y, shifted_i] = "█"
 
     # Setup x-axis labels
-    x_axis_labels = " " * (1 + padX)
+    x_axis_labels = " " * (1 + pad_x)
     for i in range(start_i, end_i):
         shifted_i = i - start_i
         if (shifted_i) % 5 == 0:
@@ -161,12 +243,12 @@ def main():
                 x_axis_labels += f"{candlesticks[shifted_i][4]}   "
             else:
                 x_axis_labels += f"{int(candlesticks[shifted_i][4])}    "
-    x_axis_labels += " " * (maxX - len(x_axis_labels))
+    x_axis_labels += " " * (max_x - len(x_axis_labels))
 
     # Setup y-axis labels
     y_axis_labels = []
     margin = len("${:,.2f}".format(ath))
-    for i in range(maxY):
+    for i in range(max_y):
         if i >= y_axis_low and i <= y_axis_high:
             shifted_i = y_axis_high - i
             if shifted_i % 4 == 0:
@@ -190,66 +272,46 @@ def main():
         print(out)
     # Print x axis labels
     print(y_axis_labels[0] + x_axis_labels)
+    if interval in ['day', 'week']:
+        x_axis_title = "Day"
+    elif interval == 'month':
+        x_axis_title = "Month"
+    elif interval in ['1min', '5min']:
+        x_axis_title = "Minute"
+    elif interval in ['15min', '30min', '60min']:
+        x_axis_title = "Hour"
+    print(y_axis_labels[0] + " " * int((len(x_axis_labels)-len(x_axis_title)) / 2) + x_axis_title)
     print()
 
     if not chart_only:
         #Print additional info
         print("Last price:\t${:,.2f}".format(candlesticks[-1][3]))
-        print(f"% change:\t{round(100*(candlesticks[-1][3]-candlesticks[0][0])/candlesticks[-1][3],2)}%")
+        print(
+            f"% change:\t{round(100*(candlesticks[-1][3]-candlesticks[0][0])/candlesticks[-1][3],2)}%"
+        )
         if wisdom:
             if candlesticks[-1][3] > candlesticks[0][0]:
-                print(random.choice([
-                    f"${ticker.upper()} to the moon! 🚀🚀🚀",
-                    "Apes alone weak, apes together strong 🦍🦍🦍",
-                    f"${ticker.upper()} primary bull thesis: I like the stock."
-                    "Stocks can only go down 100% but can go up infinite %. Stocks can literally only go up. Q.E.D.",
-                ]))
+                print(
+                    random.choice([
+                        f"${ticker.upper()} to the moon! 🚀🚀🚀",
+                        "Apes alone weak. Apes together strong 🦍🦍🦍",
+                        f"${ticker.upper()} primary bull thesis: I like the stock. 🚀🚀🚀"
+                        "Stocks can only go down 100% but can go up infinite %. Stocks can literally only go up. Q.E.D. 📈📈📈",
+                    ]))
             else:
-                print(random.choice([
-                    "Losses aren't real 'till you sell 💎🙌",
-                    "Literally cannot go tits up 💎🙌",
-                    "GUH.",
-                    "Short squeeze any time now 💎🙌"
-                ]))
+                print(
+                    random.choice([
+                        "Losses aren't real 'till you sell 💎🙌",
+                        "Literally cannot go tits up 💎🙌", "GUH.",
+                        "Short squeeze any time now 💎🙌",
+                        "Are you sufficiently leveraged for your Personal Risk Tolerance?"
+                    ]))
         print()
 
-def parse_args_exit(parser):
-    """Process args that exit."""
-    args = parser.parse_args()
 
-    if args.version:
-        parser.exit(0, f"tstock {VERSION}\n")
+def main():
+    parser = get_args()
+    parse_args_exit(parser)
 
-
-def get_args():
-    """Get the script arguments."""
-    description = "tstock - check stocks from the terminal"
-    arg = argparse.ArgumentParser(description=description)
-
-    arg.add_argument("ticker",
-                     metavar="TICKER",
-                     nargs=1,
-                     help="Specify which ticker's data to pull.")
-
-    arg.add_argument(
-        "-d",
-        metavar="days", type=int,
-        help="Number of days to go back in API call. Defaults to 90.")
-
-    arg.add_argument("-y",
-                     metavar="lines", type=int,
-                     help="Specify height of the chart. Defaults to 40.")
-
-    arg.add_argument("-v", action="store_true", help="Toggles verbosity.")
-    arg.add_argument("-c", action="store_true", help="Prints the chart only. Overrides -w.")
-    arg.add_argument("-w", action="store_true", help="Prints some extra words of 'wisdom'.")
-
-    arg.add_argument("--version",
-                     action="store_true",
-                     help="Print tstock version.")
-
-    return arg
-
-
-if __name__ == "__main__":
-    main()
+    opts = parse_args(parser)
+    draw_graph(opts)
