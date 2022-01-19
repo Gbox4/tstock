@@ -17,5 +17,6 @@ setup(
         "Operating System :: OS Independent"
     ],
     packages=["tstock"],
+    install_requires=["requests", "numpy"],
     entry_points={"console_scripts": ["tstock=tstock.__main__:main"]},
     python_requires=">=3.6")
