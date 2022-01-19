@@ -300,7 +300,7 @@ def draw_graph(opts):
                     random.choice([
                         f"${ticker.upper()} to the moon! 🚀🚀🚀",
                         "Apes alone weak. Apes together strong 🦍🦍🦍",
-                        f"${ticker.upper()} primary bull thesis: I like the stock. 🚀🚀🚀"
+                        f"${ticker.upper()} primary bull thesis: I like the stock. 🚀🚀🚀",
                         "Stocks can only go down 100% but can go up infinite %. Stocks can literally only go up. Q.E.D. 📈📈📈",
                     ]))
             else:
@@ -309,7 +309,7 @@ def draw_graph(opts):
                         "Losses aren't real 'till you sell 💎🙌",
                         "Literally cannot go tits up 💎🙌", "GUH.",
                         "Short squeeze any time now 💎🙌",
-                        "Are you sufficiently leveraged for your Personal Risk Tolerance?"
+                        "Are you sufficiently leveraged for your Personal Risk Tolerance?",
                     ]))
         print()
 
