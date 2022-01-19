@@ -80,7 +80,7 @@ def get_args():
         help="Vertical padding of the chart. Defaults to 4.")
 
     arg.add_argument("-c", metavar="CURRENCY", type=str, default="USD",
-        help="Set the currency. Only works with '-e crypto'. Defaults to 'USD'.")
+        help="Set the currency. Only works with '-a crypto'. Defaults to 'USD'.")
 
     arg.add_argument("-v", action="store_true",
         help="Toggle verbosity.")

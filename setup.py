@@ -1,13 +1,17 @@
 from tstock.settings import __version__
 from setuptools import setup
 
+def readme():
+    with open('README.md') as f:
+        return f.read()
+
 setup(
     name="tstock",
     version=__version__,
     author="Gabe Banks",
     author_email="gabriel.t.banks@gmail.com",
     description="A command line tool to view stock charts in the terminal.",
-    long_description="file: README.md",
+    long_description=readme(),
     long_description_content_type="text/markdown",
     keywords="tstock stock ticker finance crypto",
     url="https://github.com/Gbox4/tstock",

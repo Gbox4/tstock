@@ -4,9 +4,13 @@
 
 Just type `tstock aapl` to get a 3 month candlestick chart of $AAPL in your terminal!
 
-Example:
+<img src="https://i.ibb.co/x7xB8w6/tstock2-0-5.png" alt="tstockex" border="0">
 
-<img src="https://i.ibb.co/Pry8DWC/tstockex.png" alt="tstockex" border="0">
+# Features
+- Stocks for most global exchanges
+- Support for major cryptocurrencies
+- Different time intervals, including intraday trading
+- "Wisdom"?!
 
 # Dependencies
 
@@ -43,6 +47,8 @@ After installing `tstock`, you will need a AlphaVantage API key to pull the mark
 ### Usage
 
 Run `tstock TICKER` to get the 70 day chart of `$TICKER`. Use `-b COUNT` to specify the number of days back you want to pull. `-t INTERVAL` will specify the time interval of each candlestick. Use `-y LINES` to specify the length of the chart's y axis.
+
+To get cryptocurrencies, use the `-a crypto` option. For example, `tstock -a crypto BTC` would fetch a price chart of Bitcoin.
 
 You can get international markets by specifying a code after `.`. For example, to get SAIC Motor Corporation on the Shanghai Stock Exchange, run `tstock 600104.SHH`. Find more information on how to specify special tickers on AlphaVantage's docs: https://www.alphavantage.co/documentation
 
