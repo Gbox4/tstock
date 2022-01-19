@@ -99,7 +99,12 @@ def get_candlesticks(opts):
     if 'Error Message' in list(r.keys()):
         print(f"error: The API returned the following error:\n{r}")
         exit(1)
-    data = r[list(r.keys())[1]]
+
+    try:
+        data = r[list(r.keys())[1]]
+    except IndexError:
+        print("Error: The API did not return data.")
+        sys.exit(1)
 
     # Parse API data
     candlesticks = []

@@ -32,19 +32,19 @@ pip3 install tstock
 
 # Getting started
 
-### MarketStack API setup
+### AlphaVantage API setup
 
-After installing `tstock`, you will need a MarketStack API key to pull the market data.
+After installing `tstock`, you will need a AlphaVantage API key to pull the market data.
 
-- Make a free MarketStack API account at https://marketstack.com/signup/free
-- Login and find your API Access Key on the Dashboard page
-- Run `export MARKETSTACK_API_KEY=<your access key>`. You can make this permanent by adding that command to your `.bashrc`.
+- Make a free AlphaVantage API account at https://www.alphavantage.co/support/#api-key
+- After creating the account, you will see your free API key
+- Run `export ALPHAVANTAGE_API_KEY=<your access key>`. You can make this permanent by adding this line to your .bashrc
 
 ### Usage
 
-Run `./tstock TICKER` to get the 3 month chart of `$TICKER`. Use `-d DAYS` to specify the number of days back you want to pull. Use `-y LINES` to specify the length of the chart's y axis.
+Run `tstock TICKER` to get the 70 day chart of `$TICKER`. Use `-b COUNT` to specify the number of days back you want to pull. `-t INTERVAL` will specify the time interval of each candlestick. Use `-y LINES` to specify the length of the chart's y axis.
 
-You can get indexes by appending `.INDX`. for example, `./tstock DJI.INDX` to get the Dow Jones Industrial Average. Find more information on how to specify special tickers on MarketWatch's API Docs: https://marketstack.com/documentation
+You can get international markets by specifying a code after `.`. For example, to get SAIC Motor Corporation on the Shanghai Stock Exchange, run `tstock 600104.SHH`. Find more information on how to specify special tickers on AlphaVantage's docs: https://www.alphavantage.co/documentation
 
 # Notes
 
