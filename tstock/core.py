@@ -5,7 +5,6 @@ import requests
 import numpy as np
 from .parse import *
 
-
 def translate(x, l1, h1, l2, h2):
     """Translate from one range to another.
     
@@ -19,7 +18,11 @@ def translate(x, l1, h1, l2, h2):
     Returns:
         y (number) - x mapped to range 2.
     """
-    return (((x - l1) / (h1 - l1)) * (h2 - l2)) + l2
+    try:
+        return (((x - l1) / (h1 - l1)) * (h2 - l2)) + l2
+    except ZeroDivisionError:
+        print("Error: Price in this timeframe has not changed by more than $0.00001. This is more specific than the API can keep track.")
+        sys.exit(1)
 
 
 def get_api_key():
@@ -35,7 +38,7 @@ def get_api_key():
 
 
 def get_request_url(opts):
-    """Generates an API request URL based off of options"""
+    """Generates an API request URL based off of options."""
     interval = opts["interval"]
     ticker = opts["ticker"]
     equity = opts["equity"]
@@ -44,6 +47,7 @@ def get_request_url(opts):
     full = "full" if intervals_back > 100 else "compact"
     intraday = 'min' in interval
     verbose = opts["verbose"]
+    currency = opts["currency"]
     
     if equity == "stock":
         if interval == 'day':
@@ -55,10 +59,29 @@ def get_request_url(opts):
         elif intraday:
             api_function = 'TIME_SERIES_INTRADAY'
     
-    request_url = f'https://www.alphavantage.co/query?function={api_function}&symbol={ticker}&apikey={apikey}&outputsize={full}'
+        request_url = f'https://www.alphavantage.co/query?function={api_function}&symbol={ticker}&apikey={apikey}&outputsize={full}'
 
-    if intraday:
-        request_url += f"&interval={interval}"
+        if intraday:
+            request_url += f"&interval={interval}"
+
+    elif equity == "crypto":
+        if interval == 'day':
+            api_function = 'DIGITAL_CURRENCY_DAILY'
+        elif interval == 'week':
+            api_function = 'DIGITAL_CURRENCY_WEEKLY'
+        elif interval == 'month':
+            api_function = 'DIGITAL_CURRENCY_MONTHLY'
+        elif intraday:
+            api_function = 'CRYPTO_INTRADAY'
+    
+        request_url = f'https://www.alphavantage.co/query?function={api_function}&symbol={ticker}&apikey={apikey}&market={currency}'
+
+        if intraday:
+            request_url += f"&interval={interval}&outputsize={full}"
+
+    elif equity == "forex":
+        print("Sorry, forex markets are not yet supported.")
+        sys.exit(1)
 
     if verbose:
         print(f"API Key: {apikey}\nRequest URL: {request_url}")
@@ -68,8 +91,10 @@ def get_candlesticks(opts):
     """Creates a list of candlesticks of the shape [O, H, L, C, D]."""
     interval = opts["interval"]
     intervals_back = opts['intervals_back']
-    request_url = get_request_url(opts)
+    equity = opts['equity']
+    intraday = 'min' in interval
 
+    request_url = get_request_url(opts)
     r = requests.get(request_url).json()
     if 'Error Message' in list(r.keys()):
         print(f"error: The API returned the following error:\n{r}")
@@ -78,24 +103,53 @@ def get_candlesticks(opts):
 
     # Parse API data
     candlesticks = []
-    for k, v in data.items():
-        candlesticks.append([
-            float(v['1. open']),
-            float(v['2. high']),
-            float(v['3. low']),
-            float(v['4. close']), -1
-        ])
-        if interval in ['day', 'week']:
-            candlesticks[-1][4] = int(k[8:])
-        elif interval == 'month':
-            candlesticks[-1][4] = int(k[5:7])
-        elif interval in ['1min', '5min']:
-            candlesticks[-1][4] = int(k[14:16])
-        elif interval in ['15min', '30min', '60min']:
-            candlesticks[-1][4] = int(k[11:13])
-            
-        if len(candlesticks) == intervals_back:
-            break
+    if equity == "stock":
+        for k, v in data.items():
+            candlesticks.append([
+                float(v['1. open']),
+                float(v['2. high']),
+                float(v['3. low']),
+                float(v['4. close']), -1
+            ])
+            if interval in ['day', 'week']:
+                candlesticks[-1][4] = int(k[8:])
+            elif interval == 'month':
+                candlesticks[-1][4] = int(k[5:7])
+            elif interval in ['1min', '5min']:
+                candlesticks[-1][4] = int(k[14:16])
+            elif interval in ['15min', '30min', '60min']:
+                candlesticks[-1][4] = int(k[11:13])
+            if len(candlesticks) == intervals_back:
+                break
+    elif equity == "crypto":
+        for k, v in data.items():
+            prices = [ float(price) for name, price in v.items() ]
+            if intraday:
+                candlesticks.append([
+                    float(prices[0]),
+                    float(prices[1]),
+                    float(prices[2]),
+                    float(prices[3]), -1
+                ])
+            else:
+                candlesticks.append([
+                    float(prices[0]),
+                    float(prices[2]),
+                    float(prices[4]),
+                    float(prices[6]), -1
+                ])
+            if interval in ['day', 'week']:
+                candlesticks[-1][4] = int(k[8:])
+            elif interval == 'month':
+                candlesticks[-1][4] = int(k[5:7])
+            elif interval in ['1min', '5min']:
+                candlesticks[-1][4] = int(k[14:16])
+            elif interval in ['15min', '30min', '60min']:
+                candlesticks[-1][4] = int(k[11:13])
+            if len(candlesticks) == intervals_back:
+                break
+
+    # TODO: add support for forex markets
 
     candlesticks = list(reversed(candlesticks))
 
@@ -111,25 +165,16 @@ def draw_graph(opts):
     max_y = opts["max_y"]
     pad_x = opts["pad_x"]
     pad_y = opts["pad_y"]
-    verbose = opts["verbose"]
     wisdom = opts["wisdom"]
     chart_only = opts["chart_only"]
     intraday = 'min' in interval
-
-    if verbose:
-        print(
-            f"Intervals Back: {intervals_back}\nTicker: {ticker}\nY height: {max_y}\nInterval: {interval}\n" + \
-            f"Wisdom: {wisdom}\nChart only: {chart_only}"
-        )
-
     candlesticks = get_candlesticks(opts)
 
     max_x = len(candlesticks) + pad_x * 2 + 2
 
     # Create the chart
     chart = np.array([[" " for x in range(max_x)] for y in range(max_y)])
-    column_colors = ["\x1b[0m" for x in range(max_x)
-                     ]  # Stores ANSI escape sequences for printing color
+    column_colors = ["\x1b[0m" for x in range(max_x)]  # Stores ANSI escape sequences for printing color
     # Draw borders
     chart[0, :] = "─"
     chart[-1, :] = "─"
@@ -142,7 +187,7 @@ def draw_graph(opts):
 
     spacer = "x" if intraday else " "
     # Draw graph title, if there are there enough worth of data to contain it
-    title = f"┤  {intervals_back}{spacer}{interval.capitalize()} Stock Price for ${ticker.upper()}  ├"
+    title = f"┤  {intervals_back}{spacer}{interval.capitalize()} Price for ${ticker.upper()}  ├"
     if max_x >= len(title) + 2:
         for i, c in enumerate(title):
             chart[0, i + 1] = c
@@ -227,6 +272,15 @@ def draw_graph(opts):
         print(out)
     # Print x axis labels
     print(y_axis_labels[0] + x_axis_labels)
+    if interval in ['day', 'week']:
+        x_axis_title = "Day"
+    elif interval == 'month':
+        x_axis_title = "Month"
+    elif interval in ['1min', '5min']:
+        x_axis_title = "Minute"
+    elif interval in ['15min', '30min', '60min']:
+        x_axis_title = "Hour"
+    print(y_axis_labels[0] + " " * int((len(x_axis_labels)-len(x_axis_title)) / 2) + x_axis_title)
     print()
 
     if not chart_only:
@@ -240,16 +294,17 @@ def draw_graph(opts):
                 print(
                     random.choice([
                         f"${ticker.upper()} to the moon! 🚀🚀🚀",
-                        "Apes alone weak, apes together strong 🦍🦍🦍",
-                        f"${ticker.upper()} primary bull thesis: I like the stock."
-                        "Stocks can only go down 100% but can go up infinite %. Stocks can literally only go up. Q.E.D.",
+                        "Apes alone weak. Apes together strong 🦍🦍🦍",
+                        f"${ticker.upper()} primary bull thesis: I like the stock. 🚀🚀🚀"
+                        "Stocks can only go down 100% but can go up infinite %. Stocks can literally only go up. Q.E.D. 📈📈📈",
                     ]))
             else:
                 print(
                     random.choice([
                         "Losses aren't real 'till you sell 💎🙌",
                         "Literally cannot go tits up 💎🙌", "GUH.",
-                        "Short squeeze any time now 💎🙌"
+                        "Short squeeze any time now 💎🙌",
+                        "Are you sufficiently leveraged for your Personal Risk Tolerance?"
                     ]))
         print()
 
