@@ -20,7 +20,7 @@ def parse_args(parser):
         "ticker": args.ticker[0],
         "interval": args.t,
         "intervals_back": args.b,
-        "equity": args.e,
+        "asset_class": args.a,
         "max_y": args.y,
         "pad_x": args.padx,
         "pad_y": args.pady,
@@ -33,12 +33,12 @@ def parse_args(parser):
 
     # Validate arguments
     if args.t:
-        if args.t not in ['1min', '5min', '15min', '30min', '60min', 'day', 'month', 'year']:
+        if args.t not in ['1min', '5min', '15min', '30min', '60min', 'day', 'week', 'month']:
             print(f"Invalid interval value {args.t}.")
             sys.exit(1)
-    if args.e:
-        if not args.e in ['stock', 'crypto', 'forex']:
-            print(f"Invalid equity value {args.e}.")
+    if args.a:
+        if not args.a in ['stock', 'crypto', 'forex']:
+            print(f"Invalid class value {args.a}.")
             sys.exit(1)
    
     # Print options if verbose
@@ -64,8 +64,8 @@ def get_args():
     arg.add_argument("-b", metavar="COUNT", type=int, default=70,
         help="Number of time intervals back to go back. The number of candlesticks generated. Defaults to 70.")
 
-    arg.add_argument("-e", metavar="EQUITY", type=str, default='stock',
-        help="The type of equity of TICKER. Valid values are 'stock', 'crypto', and 'forex'. Defaults to 'stock'.")
+    arg.add_argument("-a", metavar="CLASS", type=str, default='stock',
+        help="The asset class of TICKER. Valid values are 'stock', 'crypto', and 'forex'. Defaults to 'stock'.")
 
     arg.add_argument("-w", action="store_false",
         help="Disables the extra words of 'wisdom'.")

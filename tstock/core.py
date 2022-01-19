@@ -41,7 +41,7 @@ def get_request_url(opts):
     """Generates an API request URL based off of options."""
     interval = opts["interval"]
     ticker = opts["ticker"]
-    equity = opts["equity"]
+    asset_class = opts["asset_class"]
     intervals_back = opts['intervals_back']
     apikey = get_api_key()
     full = "full" if intervals_back > 100 else "compact"
@@ -49,7 +49,7 @@ def get_request_url(opts):
     verbose = opts["verbose"]
     currency = opts["currency"]
     
-    if equity == "stock":
+    if asset_class == "stock":
         if interval == 'day':
             api_function = 'TIME_SERIES_DAILY'
         elif interval == 'week':
@@ -64,7 +64,7 @@ def get_request_url(opts):
         if intraday:
             request_url += f"&interval={interval}"
 
-    elif equity == "crypto":
+    elif asset_class == "crypto":
         if interval == 'day':
             api_function = 'DIGITAL_CURRENCY_DAILY'
         elif interval == 'week':
@@ -79,7 +79,7 @@ def get_request_url(opts):
         if intraday:
             request_url += f"&interval={interval}&outputsize={full}"
 
-    elif equity == "forex":
+    elif asset_class == "forex":
         print("Sorry, forex markets are not yet supported.")
         sys.exit(1)
 
@@ -91,7 +91,7 @@ def get_candlesticks(opts):
     """Creates a list of candlesticks of the shape [O, H, L, C, D]."""
     interval = opts["interval"]
     intervals_back = opts['intervals_back']
-    equity = opts['equity']
+    asset_class = opts['asset_class']
     intraday = 'min' in interval
 
     request_url = get_request_url(opts)
@@ -108,7 +108,7 @@ def get_candlesticks(opts):
 
     # Parse API data
     candlesticks = []
-    if equity == "stock":
+    if asset_class == "stock":
         for k, v in data.items():
             candlesticks.append([
                 float(v['1. open']),
@@ -126,7 +126,7 @@ def get_candlesticks(opts):
                 candlesticks[-1][4] = int(k[11:13])
             if len(candlesticks) == intervals_back:
                 break
-    elif equity == "crypto":
+    elif asset_class == "crypto":
         for k, v in data.items():
             prices = [ float(price) for name, price in v.items() ]
             if intraday:
