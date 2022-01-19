@@ -292,7 +292,7 @@ def draw_graph(opts):
         #Print additional info
         print("Last price:\t${:,.2f}".format(candlesticks[-1][3]))
         print(
-            f"% change:\t{round(100*(candlesticks[-1][3]-candlesticks[0][0])/candlesticks[-1][3],2)}%"
+            f"% change:\t{round(100*(candlesticks[-1][3]-candlesticks[0][0])/candlesticks[0][3],2)}%"
         )
         if wisdom:
             if candlesticks[-1][3] > candlesticks[0][0]:
