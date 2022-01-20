@@ -36,6 +36,43 @@ def get_api_key():
         exit(1)
     return os.environ['ALPHAVANTAGE_API_KEY']
 
+def print_short(opts):
+    """Full script for the -s option."""
+    ticker = opts["ticker"]
+    asset_class = opts["asset_class"]
+    apikey = get_api_key()
+    verbose = opts["verbose"]
+    currency = opts["currency"]
+    
+    if asset_class == "stock":
+        request_url = f'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={ticker}&apikey={apikey}'
+
+    elif asset_class == "crypto":
+        request_url = f'https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency={ticker}&apikey={apikey}&to_currency={currency}'
+
+    elif asset_class == "forex":
+        print("Sorry, forex markets are not yet supported.")
+        sys.exit(1)
+
+    if verbose:
+        print(f"API Key: {apikey}\nRequest URL: {request_url}")
+
+    r = requests.get(request_url).json()
+    if 'Error Message' in list(r.keys()):
+        print(f"error: The API returned the following error:\n{r}")
+        exit(1)
+    try:
+        data = list(r.values())[0]
+    except IndexError:
+        print("Error: The API did not return data.")
+        sys.exit(1)
+    
+    if asset_class == "stock":
+        print("{:,.2f}".format(float(data["05. price"])))
+
+    elif asset_class == "crypto":
+        print("{:,.2f}".format(float(data["5. Exchange Rate"])))
+
 
 def get_request_url(opts):
     """Generates an API request URL based off of options."""
@@ -101,7 +138,7 @@ def get_candlesticks(opts):
         exit(1)
 
     try:
-        data = r[list(r.keys())[1]]
+        data = list(r.values())[1]
     except IndexError:
         print("Error: The API did not return data.")
         sys.exit(1)
@@ -163,6 +200,10 @@ def get_candlesticks(opts):
 
 def draw_graph(opts):
     """Main tstock script body."""
+
+    if opts['short']:
+        print_short(opts)
+        return(0)
 
     ticker = opts["ticker"]
     interval = opts["interval"]

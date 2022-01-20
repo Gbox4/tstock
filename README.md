@@ -53,6 +53,7 @@ tstock aapl -t 60min -b 24 # the past 24 60-minute-intervals (aka past day) of $
 tstock aapl -t 60min -b 24 -y 20 # same as above, but only 20 lines high
 tstock btc -a crypto # chart of the cryptocurrency $BTC
 tstock btc -a crypto -c GBP # same as above, but in currency GBP
+tstock btc -a crypto -c EUR -s # print only the last price of $BTC in EUR
 ```
 
 Run `tstock TICKER` to get the 70 day chart of `$TICKER`. Use `-b COUNT` to specify the number of days back you want to pull. `-t INTERVAL` will specify the time interval of each candlestick. Use `-y LINES` to specify the length of the chart's y axis.

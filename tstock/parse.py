@@ -15,6 +15,7 @@ def parse_args_exit(parser):
         parser.exit(0, f"tstock {__version__}\n")
 
 def parse_args(parser):
+    """Parse args."""
     args = parser.parse_args()
     opts = {
         "ticker": args.ticker[0],
@@ -28,7 +29,8 @@ def parse_args(parser):
         "wisdom": args.w,
         "intraday": 'min' in args.t,
         "chart_only": args.chart,
-        "currency": args.c
+        "currency": args.c,
+        "short": args.s,
     }
 
     # Validate arguments
@@ -40,6 +42,8 @@ def parse_args(parser):
         if not args.a in ['stock', 'crypto', 'forex']:
             print(f"Invalid class value {args.a}.")
             sys.exit(1)
+    if args.c != 'USD' and args.a != 'crypto':
+        print("Warning: the -c flag is only supported for asset type 'crypto'. It will be ignored.")
    
     # Print options if verbose
     if args.v:
@@ -67,6 +71,15 @@ def get_args():
     arg.add_argument("-a", metavar="CLASS", type=str, default='stock',
         help="The asset class of TICKER. Valid values are 'stock', 'crypto', and 'forex'. Defaults to 'stock'.")
 
+    arg.add_argument("-s", action="store_true",
+        help="Short output, prints the last price only.")
+
+    arg.add_argument("--chart", action="store_true",
+        help="Print the chart only. Overrides -w.")
+
+    arg.add_argument("-c", metavar="CURRENCY", type=str, default="USD",
+        help="Set the currency. Only works with '-a crypto'. Defaults to 'USD'.")
+
     arg.add_argument("-w", action="store_false",
         help="Disables the extra words of 'wisdom'.")
 
@@ -79,14 +92,8 @@ def get_args():
     arg.add_argument("--pady", metavar="LINES", type=int, default=4,
         help="Vertical padding of the chart. Defaults to 4.")
 
-    arg.add_argument("-c", metavar="CURRENCY", type=str, default="USD",
-        help="Set the currency. Only works with '-a crypto'. Defaults to 'USD'.")
-
     arg.add_argument("-v", action="store_true",
         help="Toggle verbosity.")
-
-    arg.add_argument("--chart", action="store_true",
-        help="Print the chart only. Overrides -w.")
 
     arg.add_argument("--version", action="store_true",
         help="Print tstock version.")
