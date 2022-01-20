@@ -1,3 +1,5 @@
+# Written by Gabe Banks 2022 <https://gabebanks.net>
+
 import os
 import sys
 import random

@@ -1,3 +1,5 @@
+# Written by Gabe Banks 2022 <https://gabebanks.net>
+
 import argparse
 import sys
 from .settings import __version__
@@ -7,18 +9,18 @@ def parse_args_exit(parser):
     """Process args that exit."""
     args = parser.parse_args()
 
-    if len(sys.argv) <= 1:
+    if not args.ticker:
         parser.print_help()
         sys.exit(1)
 
     if args.version:
-        parser.exit(0, f"tstock {__version__}\n")
+        parser.exit(0, f"tstock {__version__}\nWritten by Gabe Banks 2022 <https://gabebanks.net>\n")
 
 def parse_args(parser):
     """Parse args."""
     args = parser.parse_args()
     opts = {
-        "ticker": args.ticker[0],
+        "ticker": args.ticker,
         "interval": args.t,
         "intervals_back": args.b,
         "asset_class": args.a,
@@ -59,7 +61,7 @@ def get_args():
     description = "tstock - check stocks from the terminal"
     arg = argparse.ArgumentParser(description=description)
 
-    arg.add_argument("ticker", metavar="TICKER", nargs=1,
+    arg.add_argument("ticker", metavar="TICKER", nargs='?',
         help="Which ticker's data to pull.")
 
     arg.add_argument("-t", metavar="INTERVAL", type=str, default='day',
@@ -80,8 +82,8 @@ def get_args():
     arg.add_argument("-c", metavar="CURRENCY", type=str, default="USD",
         help="Set the currency. Only works with '-a crypto'. Defaults to 'USD'.")
 
-    arg.add_argument("-w", action="store_false",
-        help="Disables the extra words of 'wisdom'.")
+    arg.add_argument("-w", action="store_true",
+        help="Enables extra words of 'wisdom'.")
 
     arg.add_argument("-y", metavar="LINES", type=int, default=40,
         help="Height of the chart. Defaults to 40.")
