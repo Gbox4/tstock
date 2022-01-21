@@ -1,4 +1,4 @@
-# tstock - Check stocks from the terminal! 🚀🚀🚀
+# tstock - Generate stock charts in the terminal! 🚀🚀🚀
 
 📈 tstock is a tool to easily generate stock charts from the command line.
 
