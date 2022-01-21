@@ -58,7 +58,7 @@ def parse_args(parser):
 
 def get_args():
     """Get the script arguments."""
-    description = "tstock - check stocks from the terminal"
+    description = "tstock - generate stock charts in the terminal."
     arg = argparse.ArgumentParser(description=description)
 
     arg.add_argument("ticker", metavar="TICKER", nargs='?',
