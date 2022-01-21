@@ -70,7 +70,7 @@ You can get international markets by specifying a code after `.`. For example, t
 
 # Donate
 
-I develop `tstock` for free in my spare time. If you like it, and want to by me a coffee, I'd really appreciate it.
+I develop `tstock` for free in my spare time. If you like it, and want to buy me a coffee, I'd really appreciate it.
 
 Bitcoin: (<a href='https://i.ibb.co/b2rS0kV/btcgithubtstock.png'>QR</a>) `bc1qusuztegpfuh7jk25l2dx5xyjvasgryrqg42d5n`
 
