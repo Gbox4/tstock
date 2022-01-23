@@ -112,20 +112,37 @@ def get_request_url(opts):
             api_function = 'DIGITAL_CURRENCY_MONTHLY'
         elif intraday:
             api_function = 'CRYPTO_INTRADAY'
-    
         request_url = f'https://www.alphavantage.co/query?function={api_function}&symbol={ticker}&apikey={apikey}&market={currency}'
-
         if intraday:
             request_url += f"&interval={interval}&outputsize={full}"
 
     elif asset_class == "forex":
-        print("Sorry, forex markets are not yet supported.")
-        sys.exit(1)
+        if ticker.count("/") != 1:
+            print("Please delimit currency pairs with a slash /. Ex: tstock -a forex USD/HKD")
+            sys.exit(1)
+        ticker = ticker.split("/")
+        from_currency = ticker[0]
+        to_currency = ticker[1]
+        if interval == 'day':
+            api_function = 'FX_DAILY'
+        elif interval == 'week':
+            api_function = 'FX_WEEKLY'
+        elif interval == 'month':
+            api_function = 'FX_MONTHLY'
+        elif intraday:
+            api_function = 'FX_INTRADAY'
+        request_url = f'https://www.alphavantage.co/query?function={api_function}&from_symbol={from_currency}&to_symbol={to_currency}&apikey={apikey}'
+        if interval == 'day' or intraday:
+            request_url += f"&outputsize={full}"
+        if intraday:
+            request_url += f"&interval={interval}"
 
     if verbose:
         print(f"API Key: {apikey}\nRequest URL: {request_url}")
     return request_url
-    
+
+
+# TODO: Make this utilize half-blocks and eigth-blocks.
 def get_candlesticks(opts):
     """Creates a list of candlesticks of the shape [O, H, L, C, D]."""
     interval = opts["interval"]
@@ -182,6 +199,25 @@ def get_candlesticks(opts):
                     float(prices[4]),
                     float(prices[6]), -1
                 ])
+            if interval in ['day', 'week']:
+                candlesticks[-1][4] = int(k[8:])
+            elif interval == 'month':
+                candlesticks[-1][4] = int(k[5:7])
+            elif interval in ['1min', '5min']:
+                candlesticks[-1][4] = int(k[14:16])
+            elif interval in ['15min', '30min', '60min']:
+                candlesticks[-1][4] = int(k[11:13])
+            if len(candlesticks) == intervals_back:
+                break
+    elif asset_class == "forex":
+        for k, v in data.items():
+            prices = [ float(price) for name, price in v.items() ]
+            candlesticks.append([
+                float(prices[0]),
+                float(prices[1]),
+                float(prices[2]),
+                float(prices[3]), -1
+            ])
             if interval in ['day', 'week']:
                 candlesticks[-1][4] = int(k[8:])
             elif interval == 'month':
@@ -265,7 +301,7 @@ def draw_graph(opts):
             translate(c[3], atl, ath, y_axis_high, y_axis_low))
         # Draw high/low
         for y in range(translated_high, translated_low + 1):
-            chart[y, shifted_i] = "|"
+            chart[y, shifted_i] = "│"
         # Draw open/close
         # Positive day, stock went up
         if c[0] < c[3]:
