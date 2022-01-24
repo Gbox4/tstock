@@ -53,6 +53,7 @@ def print_short(opts):
         request_url = f'https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency={ticker}&apikey={apikey}&to_currency={currency}'
 
     elif asset_class == "forex":
+        # TODO: fix this
         print("Sorry, forex markets are not yet supported.")
         sys.exit(1)
 
@@ -117,9 +118,6 @@ def get_request_url(opts):
             request_url += f"&interval={interval}&outputsize={full}"
 
     elif asset_class == "forex":
-        if ticker.count("/") != 1:
-            print("Please delimit currency pairs with a slash /. Ex: tstock -a forex USD/HKD")
-            sys.exit(1)
         ticker = ticker.split("/")
         from_currency = ticker[0]
         to_currency = ticker[1]
@@ -251,6 +249,7 @@ def draw_graph(opts):
     pad_y = opts["pad_y"]
     wisdom = opts["wisdom"]
     chart_only = opts["chart_only"]
+    currency_symbol = opts['currency_symbol']
     intraday = 'min' in interval
     candlesticks = get_candlesticks(opts)
 
@@ -283,6 +282,7 @@ def draw_graph(opts):
             ath = c[1]
         if c[2] < atl:
             atl = c[2]
+    extra_decimals = ath - atl < 0.1
     # Draw candlesticks
     start_i = 1 + pad_x
     end_i = max_x - 1 - pad_x
@@ -331,14 +331,19 @@ def draw_graph(opts):
 
     # Setup y-axis labels
     y_axis_labels = []
-    margin = len("${:,.2f}".format(ath))
+    if extra_decimals:
+        margin = len( currency_symbol + "{:,.5f}".format(ath))
+    else:
+        margin = len( currency_symbol + "{:,.2f}".format(ath))
     for i in range(max_y):
         if i >= y_axis_low and i <= y_axis_high:
             shifted_i = y_axis_high - i
             if shifted_i % 4 == 0:
                 chart[i, 0] = "┼"
-                label = "${:,.2f}".format(
-                    translate(shifted_i, y_axis_low, y_axis_high, atl, ath))
+                if extra_decimals:
+                    label = currency_symbol + "{:,.5f}".format(translate(shifted_i, y_axis_low, y_axis_high, atl, ath))
+                else:
+                    label = currency_symbol + "{:,.2f}".format(translate(shifted_i, y_axis_low, y_axis_high, atl, ath))
                 y_axis_labels.append(" " * (margin - len(label)) + f"{label}")
             else:
                 y_axis_labels.append(" " * margin)
@@ -369,7 +374,11 @@ def draw_graph(opts):
 
     if not chart_only:
         #Print additional info
-        print("Last price:\t${:,.2f}".format(candlesticks[-1][3]))
+        if extra_decimals:
+            label = currency_symbol + "{:,.5f}".format(candlesticks[-1][3])
+        else:
+            label = currency_symbol + "{:,.2f}".format(candlesticks[-1][3])
+        print("Last price:\t" + label)
         print(
             f"% change:\t{round(100*(candlesticks[-1][3]-candlesticks[0][0])/candlesticks[0][3],2)}%"
         )
