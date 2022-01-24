@@ -3,7 +3,7 @@
 import argparse
 from locale import currency
 import sys
-from .settings import __version__
+from .settings import __version__, extra_help
 
 
 def parse_args_exit(parser):
@@ -93,7 +93,7 @@ def parse_args(parser):
 def get_args():
     """Get the script arguments."""
     description = "tstock - generate stock charts in the terminal."
-    arg = argparse.ArgumentParser(description=description)
+    arg = argparse.ArgumentParser(description=description, epilog=extra_help, formatter_class=argparse.RawTextHelpFormatter)
 
     arg.add_argument("ticker", metavar="TICKER", nargs='?',
         help="Which ticker's data to pull.")
