@@ -45,6 +45,7 @@ def print_short(opts):
     apikey = get_api_key()
     verbose = opts["verbose"]
     currency = opts["currency"]
+    currency_symbol = opts["currency_symbol"]
     
     if asset_class == "stock":
         request_url = f'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={ticker}&apikey={apikey}'
@@ -53,9 +54,10 @@ def print_short(opts):
         request_url = f'https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency={ticker}&apikey={apikey}&to_currency={currency}'
 
     elif asset_class == "forex":
-        # TODO: fix this
-        print("Sorry, forex markets are not yet supported.")
-        sys.exit(1)
+        ticker = ticker.split("/")
+        from_currency = ticker[0]
+        to_currency = ticker[1]
+        request_url = f'https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency={from_currency}&to_currency={to_currency}&apikey={apikey}'
 
     if verbose:
         print(f"API Key: {apikey}\nRequest URL: {request_url}")
@@ -71,10 +73,14 @@ def print_short(opts):
         sys.exit(1)
     
     if asset_class == "stock":
-        print("{:,.2f}".format(float(data["05. price"])))
+        print(currency_symbol + "{:,.2f}".format(float(data["05. price"])))
 
-    elif asset_class == "crypto":
-        print("{:,.2f}".format(float(data["5. Exchange Rate"])))
+    elif asset_class == "crypto" or asset_class == "forex":
+        price = float(data["5. Exchange Rate"])
+        if price < 0.01:
+            print(currency_symbol + "{:,.5f}".format(price))
+        else:
+            print(currency_symbol + "{:,.2f}".format(price))
 
 
 def get_request_url(opts):
@@ -226,8 +232,6 @@ def get_candlesticks(opts):
                 candlesticks[-1][4] = int(k[11:13])
             if len(candlesticks) == intervals_back:
                 break
-
-    # TODO: add support for forex markets
 
     candlesticks = list(reversed(candlesticks))
 
