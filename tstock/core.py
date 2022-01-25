@@ -35,7 +35,7 @@ def get_api_key():
         "- After creating the account, you will see your free API key\n" + \
         "- Run \"export ALPHAVANTAGE_API_KEY=<your access key>\"." + \
         "You can make this permanent by adding this line to your .bashrc\n")
-        exit(1)
+        sys.exit(1)
     return os.environ['ALPHAVANTAGE_API_KEY']
 
 def print_short(opts):
@@ -62,10 +62,14 @@ def print_short(opts):
     if verbose:
         print(f"API Key: {apikey}\nRequest URL: {request_url}")
 
-    r = requests.get(request_url).json()
+    try:
+        r = requests.get(request_url).json()
+    except:
+        print("An error occured while making an HTTP request. Are you connected to the internet?")
+        sys.exit(1)
     if 'Error Message' in list(r.keys()):
         print(f"error: The API returned the following error:\n{r}")
-        exit(1)
+        sys.exit(1)
     try:
         data = list(r.values())[0]
     except IndexError:
@@ -158,7 +162,7 @@ def get_candlesticks(opts):
     r = requests.get(request_url).json()
     if 'Error Message' in list(r.keys()):
         print(f"error: The API returned the following error:\n{r}")
-        exit(1)
+        sys.exit(1)
 
     try:
         data = list(r.values())[1]

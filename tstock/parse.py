@@ -10,7 +10,8 @@ def parse_args_exit(parser):
     """Process args that exit."""
     args = parser.parse_args()
     if args.version:
-        parser.exit(0, f"tstock {__version__}\nWritten by Gabe Banks 2022 <https://gabebanks.net>\n")
+        print(f"tstock {__version__}\nWritten by Gabe Banks 2022 <https://gabebanks.net>")
+        sys.exit(0)
 
     if not args.ticker:
         parser.print_help()
