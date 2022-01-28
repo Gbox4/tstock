@@ -9,6 +9,7 @@ Just type `tstock aapl` to get a 3 month candlestick chart of $AAPL in your term
 # Features
 - Stocks for most global exchanges
 - Support for major cryptocurrencies
+- Forex markets and currency exchange rates
 - Different time intervals, including intraday trading
 - "Wisdom"?!
 
