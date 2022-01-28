@@ -8,17 +8,18 @@ import numpy as np
 from .parse import *
 
 def translate(x, l1, h1, l2, h2):
-    """Translate from one range to another.
+    """
+    Translate from one range to another.
     
-    Arguments:
-        x (number) - number to translate in range 1.
-        l1 (number) - lower bound of range 1.
-        h1 (number) - upper bound of range 1.
-        l2 (number) - lower bound of range 2.
-        h2 (number) - upper bound of range 2.
+        Parameters:
+            x (float) - number to translate in range 1.
+            l1 (float) - lower bound of range 1.
+            h1 (float) - upper bound of range 1.
+            l2 (float) - lower bound of range 2.
+            h2 (float) - upper bound of range 2.
 
-    Returns:
-        y (number) - x mapped to range 2.
+        Returns:
+            y (float) - x mapped to range 2.
     """
     try:
         return (((x - l1) / (h1 - l1)) * (h2 - l2)) + l2
