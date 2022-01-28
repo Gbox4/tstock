@@ -164,9 +164,12 @@ def get_candlesticks(opts):
     intraday = 'min' in interval
 
     # Try to send HTTP request
-    # TODO: add try-catch block for this http request
     request_url = get_request_url(opts)
-    r = requests.get(request_url).json()
+    try:
+        r = requests.get(request_url).json()
+    except:
+        print("An error occured while making an HTTP request. Are you connected to the internet?")
+        sys.exit(1)
     if 'Error Message' in list(r.keys()):
         print(f"error: The API returned the following error:\n{r}")
         sys.exit(1)
