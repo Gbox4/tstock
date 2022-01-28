@@ -47,6 +47,7 @@ def print_short(opts):
     currency = opts["currency"]
     currency_symbol = opts["currency_symbol"]
     
+    # Vary request url depending on the asset class
     if asset_class == "stock":
         request_url = f'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={ticker}&apikey={apikey}'
 
@@ -58,27 +59,29 @@ def print_short(opts):
         from_currency = ticker[0]
         to_currency = ticker[1]
         request_url = f'https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency={from_currency}&to_currency={to_currency}&apikey={apikey}'
-
     if verbose:
         print(f"API Key: {apikey}\nRequest URL: {request_url}")
 
+    # Try to make a HTTP request. If this fails, there is probably no internet.
     try:
         r = requests.get(request_url).json()
     except:
         print("An error occured while making an HTTP request. Are you connected to the internet?")
         sys.exit(1)
+    # If the API responds with 'Error Message', report it and exit.
     if 'Error Message' in list(r.keys()):
         print(f"error: The API returned the following error:\n{r}")
         sys.exit(1)
+    # Try to parse the incoming JSON data. If it fails, then the API does that weird thing where it returns an empty JSON object {}
     try:
         data = list(r.values())[0]
     except IndexError:
         print("Error: The API did not return data.")
         sys.exit(1)
     
+    # Output the data. Stocks pretty much never matter on the interval of below one penny, but crypto and forex can
     if asset_class == "stock":
         print(currency_symbol + "{:,.2f}".format(float(data["05. price"])))
-
     elif asset_class == "crypto" or asset_class == "forex":
         price = float(data["5. Exchange Rate"])
         if price < 0.01:
@@ -99,6 +102,7 @@ def get_request_url(opts):
     verbose = opts["verbose"]
     currency = opts["currency"]
     
+    # Builds different request_urls corresponding to the endpoints of the API, depending on which asset class is specified.
     if asset_class == "stock":
         if interval == 'day':
             api_function = 'TIME_SERIES_DAILY'
@@ -149,8 +153,8 @@ def get_request_url(opts):
         print(f"API Key: {apikey}\nRequest URL: {request_url}")
     return request_url
 
-
-# TODO: Make this utilize half-blocks and eigth-blocks.
+# It would be nice if when the candlesticks are drawn, additional detail could be had by utilizing quarter-blocks and eighth-blocks.
+# Not sure if this is possible though.
 def get_candlesticks(opts):
     """Creates a list of candlesticks of the shape [O, H, L, C, D]."""
     interval = opts["interval"]
@@ -158,6 +162,8 @@ def get_candlesticks(opts):
     asset_class = opts['asset_class']
     intraday = 'min' in interval
 
+    # Try to send HTTP request
+    # TODO: add try-catch block for this http request
     request_url = get_request_url(opts)
     r = requests.get(request_url).json()
     if 'Error Message' in list(r.keys()):

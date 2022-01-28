@@ -2,6 +2,7 @@
 
 __version__ = "2.1.1"
 
+# Printed as a part of --help
 extra_help = """Examples:
     tstock aapl # chart of $AAPL
     tstock aapl -t 1min # the past 70 1-minute-intervals of $AAPL
