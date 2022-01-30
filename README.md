@@ -1,10 +1,16 @@
 # tstock - Generate stock charts in the terminal! 🚀🚀🚀
 
+![PyPI - Downloads](https://img.shields.io/pypi/dm/tstock)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/Gbox4/tstock?label=size)
+![PyPI](https://img.shields.io/pypi/v/tstock)
+
 📈 tstock is a tool to easily generate stock charts from the command line.
 
 Just type `tstock aapl` to get a 3 month candlestick chart of $AAPL in your terminal!
 
-<img src="https://i.ibb.co/x7xB8w6/tstock2-0-5.png" alt="tstockex" border="0">
+<p align="center">
+  <img src="https://github.com/Gbox4/Gbox4/raw/master/tstock-demo.gif" alt="tstock-demo">
+</p>
 
 # Features
 - Stocks for most global exchanges
