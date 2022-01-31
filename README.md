@@ -22,9 +22,13 @@ Just type `tstock aapl` to get a 3 month candlestick chart of $AAPL in your term
 # Dependencies
 
 - Python 3.6 or greater
+- Docker, if using the Docker version
 
 # Installation
 
+## Docker
+1. Build Docker: `docker build -t tstock .`
+2. Run: `docker run -e ALPHAVANTAGE_API_KEY=<yourkey> -it tstock:latest tstock aapl`
 ### AUR
 
 `tstock` is available on the AUR. If you are on an Archlinux system, you can just install it using your AUR helper. Example using `yay`:
