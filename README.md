@@ -26,9 +26,6 @@ Just type `tstock aapl` to get a 3 month candlestick chart of $AAPL in your term
 
 # Installation
 
-## Docker
-1. Build Docker: `docker build -t tstock .`
-2. Run: `docker run -e ALPHAVANTAGE_API_KEY=<yourkey> -it tstock:latest tstock aapl`
 ### AUR
 
 `tstock` is available on the AUR. If you are on an Archlinux system, you can just install it using your AUR helper. Example using `yay`:
@@ -45,6 +42,13 @@ yay -S tstock
 pip install tstock
 ```
 
+## Docker
+
+Use Docker if you are on Windows:
+
+1. Build Docker: `docker build -t tstock .`
+2. Run: `docker run -e ALPHAVANTAGE_API_KEY=<yourkey> -it tstock:latest tstock aapl`
+
 # Getting started
 
 ### AlphaVantage API setup
@@ -57,15 +61,42 @@ After installing `tstock`, you will need a AlphaVantage API key to pull the mark
 
 ### Usage
 
-```bash
-tstock aapl # chart of $AAPL
-tstock aapl -t 1min # the past 70 1-minute-intervals of $AAPL
-tstock aapl -t 60min -b 24 # the past 24 60-minute-intervals (aka past day) of $AAPL
-tstock aapl -t 60min -b 24 -y 20 # same as above, but only 20 lines high
-tstock btc # chart of the cryptocurrency $BTC
-tstock btc -w # same as above, with rocket ships 🚀🚀🚀
-tstock btc -c GBP # same as above, but in currency GBP
-tstock usd/eur # chart of the price of USD in euros
+```
+tstock --help
+usage: tstock [-h] [-t INTERVAL] [-b COUNT] [-w] [-s] [--chart]
+                   [-c CURRENCY] [-y LINES] [-a CLASS] [--padx COLUMNS]
+                   [--pady LINES] [-v] [--version]
+                   [TICKER]
+
+tstock - generate stock charts in the terminal.
+
+positional arguments:
+  TICKER          Which ticker's data to pull.
+
+options:
+  -h, --help      show this help message and exit
+  -t INTERVAL     Time interval of each candlestick. Valid values are '1min', '5min', '15min', '30min', '60min', 'day', 'week', or 'month'. Defaults to 'day'.
+  -b COUNT        Number of time intervals back to go back. The number of candlesticks generated. Defaults to 70.
+  -w              Enables extra words of 'wisdom'.
+  -s              Short output, prints the last price only.
+  --chart         Print the chart only. Overrides -w.
+  -c CURRENCY     Set the currency. Only works with '-a crypto'. Defaults to 'USD'.
+  -y LINES        Height of the chart. Defaults to 40.
+  -a CLASS        The asset class of TICKER. Valid values are 'stock', 'crypto', and 'forex'. Autodetects depending on input ticker.
+  --padx COLUMNS  Horizontal padding of the chart. Defaults to 5.
+  --pady LINES    Vertical padding of the chart. Defaults to 4.
+  -v              Toggle verbosity.
+  --version       Print tstock version.
+
+Examples:
+    tstock aapl # chart of $AAPL
+    tstock aapl -t 1min # the past 70 1-minute-intervals of $AAPL
+    tstock aapl -t 60min -b 24 # the past 24 60-minute-intervals (aka past day) of $AAPL
+    tstock aapl -t 60min -b 24 -y 20 # same as above, but only 20 lines high
+    tstock btc # chart of the cryptocurrency $BTC
+    tstock btc -w # same as above, with rocket ships 🚀🚀🚀
+    tstock btc -c GBP # same as above, but in currency GBP
+    tstock usd/eur # chart of the price of USD in euros
 ```
 
 Run `tstock TICKER` to get the 70 day chart of `$TICKER`. Use `-b COUNT` to specify the number of days back you want to pull. `-t INTERVAL` will specify the time interval of each candlestick. Use `-y LINES` to specify the length of the chart's y axis.
