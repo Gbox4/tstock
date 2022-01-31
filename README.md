@@ -42,7 +42,7 @@ yay -S tstock
 pip install tstock
 ```
 
-## Docker
+### Docker
 
 Use Docker if you are on Windows:
 
