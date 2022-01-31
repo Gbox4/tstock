@@ -72,7 +72,7 @@ def parse_args(parser):
             print(f"Invalid currency {c}")
             sys.exit(1)
         if c in list(currency_symbols.keys()):
-            opts['currency_symbol'] = currency_symbols[args.c]
+            opts['currency_symbol'] = currency_symbols[c]
         else:
             opts['currency_symbol'] = ''
     
