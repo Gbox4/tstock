@@ -55,7 +55,10 @@ After installing `tstock`, you will need a AlphaVantage API key to pull the mark
 
 - Make a free AlphaVantage API account at https://www.alphavantage.co/support/#api-key
 - After creating the account, you will see your free API key
-- Run `export ALPHAVANTAGE_API_KEY=<your access key>`. You can make this permanent by adding this line to your .bashrc
+- On the Linux: Run `export ALPHAVANTAGE_API_KEY=<your access key>`  
+  You can make this permanent by adding this line to your .bashrc  
+  On the Windows: Run `$env:ALPHAVANTAGE_API_KEY="<your access key>"`  
+  You can make this permanent by adding this line to your Microsoft.PowerShell_profile.ps1  
 
 ### Usage
 
