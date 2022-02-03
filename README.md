@@ -1,6 +1,6 @@
 # tstock - Generate stock charts in the terminal! 🚀🚀🚀
 
-![PyPI - Downloads](https://img.shields.io/pypi/dm/tstock)
+[![Downloads](https://pepy.tech/badge/tstock)](https://pepy.tech/project/tstock)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/Gbox4/tstock?label=size)
 ![PyPI](https://img.shields.io/pypi/v/tstock)
 
