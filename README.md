@@ -118,4 +118,6 @@ Donate: https://www.buymeacoffee.com/Gbox4
 
 Bitcoin: (<a href='https://i.ibb.co/b2rS0kV/btcgithubtstock.png'>QR</a>) `bc1qusuztegpfuh7jk25l2dx5xyjvasgryrqg42d5n`
 
+BCH: (<a href='https://i.ibb.co/WpWv96K/download.png'>QR</a>) `qq0gedhne30lcr3253zz08sy4ryxukgx4gcrk6qzjg`
+
 Monero: (<a href='https://i.ibb.co/PNhgC3q/xmrgithubtstock.png'>QR</a>) `87wuCKbbchKV8Dz3JRoSN3jaqWBSiEShFXkFrYUaKT8Bew4P7dFvUJWVVR6RLr84J44QCdtNVyR6QC7aCSKYUWfnGK9y4K2`
