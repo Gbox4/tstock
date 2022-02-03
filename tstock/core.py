@@ -30,14 +30,15 @@ def translate(x, l1, h1, l2, h2):
 
 def get_api_key():
     """Gets the API key from the environment variable ALPHAVANTAGE_API_KEY, raises an error if not found."""
-    if not 'ALPHAVANTAGE_API_KEY' in list(os.environ.keys()):
+    if os.getenv('ALPHAVANTAGE_API_KEY') == None:
         print("error: API key not detected! Follow these instructions to get your API Key working:\n" + \
         "- Make a free AlphaVantage API account at https://www.alphavantage.co/support/#api-key\n" + \
         "- After creating the account, you will see your free API key\n" + \
         "- Run \"export ALPHAVANTAGE_API_KEY=<your access key>\"." + \
         "You can make this permanent by adding this line to your .bashrc\n")
         sys.exit(1)
-    return os.environ['ALPHAVANTAGE_API_KEY']
+    else:
+        return os.getenv('ALPHAVANTAGE_API_KEY')
 
 def print_short(opts):
     """Full script for the -s option."""
