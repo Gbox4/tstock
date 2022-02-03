@@ -44,8 +44,6 @@ pip install tstock
 
 ### Docker
 
-Use Docker if you are on Windows:
-
 1. Build Docker: `docker build -t tstock .`
 2. Run: `docker run -e ALPHAVANTAGE_API_KEY=<yourkey> -it tstock:latest tstock aapl`
 
@@ -110,6 +108,7 @@ You can get international markets by specifying a code after `.`. For example, t
 # Notes
 
 - The free tier of the API is limited to 500 API calls per day, 5 calls per minute.
+- If you are using Windows, the ANSI escape codes will not display properly in the default cmd shell or PowerShell. Please use an emulator that supports ANSI escape codes such as <a href='https://www.microsoft.com/en-us/p/windows-terminal/9n0dx20hk701?activetab=pivot:overviewtab'>Windows Terminal</a>.
 
 # Donate
 
