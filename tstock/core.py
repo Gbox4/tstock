@@ -275,7 +275,7 @@ def draw_graph(opts):
     max_x = len(candlesticks) + pad_x * 2 + 2
 
     # Create the chart
-    chart = np.array([[" " for x in range(max_x)] for y in range(max_y)])
+    chart = np.full((max_y, max_x), " ")
     column_colors = ["\x1b[0m" for x in range(max_x)]  # Stores ANSI escape sequences for printing color
     # Draw borders
     chart[0, :] = "─"
@@ -294,13 +294,8 @@ def draw_graph(opts):
         for i, c in enumerate(title):
             chart[0, i + 1] = c
     # Find all time high and all time low
-    ath = 0
+    ath = np.max(candlesticks)
     atl = 99999999
-    for c in candlesticks:
-        if c[1] > ath:
-            ath = c[1]
-        if c[2] < atl:
-            atl = c[2]
     extra_decimals = ath - atl < 0.1
     # Draw candlesticks
     start_i = 1 + pad_x
