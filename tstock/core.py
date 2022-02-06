@@ -294,8 +294,13 @@ def draw_graph(opts):
         for i, c in enumerate(title):
             chart[0, i + 1] = c
     # Find all time high and all time low
-    ath = np.max(candlesticks)
+    ath = 0
     atl = 99999999
+    for c in candlesticks:
+        if c[1] > ath:
+            ath = c[1]
+        if c[2] < atl:
+            atl = c[2]
     extra_decimals = ath - atl < 0.1
     # Draw candlesticks
     start_i = 1 + pad_x
