@@ -49,7 +49,7 @@ def parse_args(parser):
     ty = t.lines
 
     if opts["intervals_back"] == -1:
-        opts["intervals_back"] = tx - opts['pad_x']*2 - 10
+        opts["intervals_back"] = tx - opts['pad_x']*2 - 15
         if args.v:
             print("Small x detected, automatically resizing to fit...")
     if opts["max_y"] == -1:
