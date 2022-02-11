@@ -40,6 +40,7 @@ def get_api_key():
     else:
         return os.getenv('ALPHAVANTAGE_API_KEY')
 
+
 def print_short(opts):
     """Full script for the -s option."""
     ticker = opts["ticker"]
@@ -418,7 +419,6 @@ def draw_graph(opts):
                         "Short squeeze any time now 💎🙌",
                         "Are you sufficiently leveraged for your Personal Risk Tolerance?",
                     ]))
-        print()
 
 
 def main():

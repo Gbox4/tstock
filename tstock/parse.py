@@ -1,7 +1,7 @@
 # Written by Gabe Banks 2022 <https://gabebanks.net>
 
 import argparse
-from locale import currency
+import os
 import sys
 from .settings import __version__, extra_help
 
@@ -42,6 +42,21 @@ def parse_args(parser):
         "short": args.s,
         "currency_symbol": "$",
     }
+
+    # Autofit x and y size
+    t = os.get_terminal_size()
+    tx = t.columns
+    ty = t.lines
+
+    if opts["intervals_back"] == -1:
+        opts["intervals_back"] = tx - opts['pad_x']*2 - 10
+        if args.v:
+            print("Small x detected, automatically resizing to fit...")
+    if opts["max_y"] == -1:
+        opts["max_y"] = ty - 6
+        if args.v:
+            print("Small y detected, automatically resizing to fit...")
+    
 
     # Infer the asset class from the input
     if '/' in opts['ticker']:
@@ -115,8 +130,8 @@ def get_args():
     arg.add_argument("-t", metavar="INTERVAL", type=str, default='day',
         help="Time interval of each candlestick. Valid values are '1min', '5min', '15min', '30min', '60min', 'day', 'week', or 'month'. Defaults to 'day'.")
 
-    arg.add_argument("-b", metavar="COUNT", type=int, default=70,
-        help="Number of time intervals back to go back. The number of candlesticks generated. Defaults to 70.")
+    arg.add_argument("-b", metavar="COUNT", type=int, default=-1,
+        help="Number of time intervals back to go back. The number of candlesticks generated. Defaults to fill the terminal.")
 
     arg.add_argument("-w", action="store_true",
         help="Enables extra words of 'wisdom'.")
@@ -130,8 +145,8 @@ def get_args():
     arg.add_argument("-c", metavar="CURRENCY", type=str, default="USD",
         help="Set the currency. Only works with '-a crypto'. Defaults to 'USD'.")
 
-    arg.add_argument("-y", metavar="LINES", type=int, default=40,
-        help="Height of the chart. Defaults to 40.")
+    arg.add_argument("-y", metavar="LINES", type=int, default=-1,
+        help="Height of the chart. Defaults to fill the terminal.")
 
     arg.add_argument("-a", metavar="CLASS", type=str, default='stock',
         help="The asset class of TICKER. Valid values are 'stock', 'crypto', and 'forex'. Autodetects depending on input ticker.")

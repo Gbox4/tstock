@@ -97,7 +97,7 @@ Examples:
     tstock usd/eur # chart of the price of USD in euros
 ```
 
-Run `tstock TICKER` to get the 70 day chart of `$TICKER`. Use `-b COUNT` to specify the number of days back you want to pull. `-t INTERVAL` will specify the time interval of each candlestick. Use `-y LINES` to specify the length of the chart's y axis.
+Run `tstock TICKER` to get the 70 day chart of `$TICKER`. Use `-b COUNT` to specify the number of intervals back you want to pull. `-t INTERVAL` will specify the time interval of each candlestick. Use `-y LINES` to specify the length of the chart's y axis.
 
 To get cryptocurrencies, use the `-a crypto` option. For example, `tstock -a crypto BTC` would fetch a price chart of Bitcoin.
 
@@ -108,7 +108,7 @@ You can get international markets by specifying a code after `.`. For example, t
 # Notes
 
 - The free tier of the API is limited to 500 API calls per day, 5 calls per minute.
-- If you are using Windows, the ANSI escape codes will not display properly in the default cmd shell or PowerShell. Please use an emulator that supports ANSI escape codes such as <a href='https://www.microsoft.com/en-us/p/windows-terminal/9n0dx20hk701?activetab=pivot:overviewtab'>Windows Terminal</a>.
+- If you are using Windows, the ANSI escape codes will not display properly in the default cmd shell or PowerShell. Please use a terminal emulator that supports ANSI escape codes such as <a href='https://www.microsoft.com/en-us/p/windows-terminal/9n0dx20hk701?activetab=pivot:overviewtab'>Windows Terminal</a>.
 
 # Donate
 
