@@ -416,7 +416,8 @@ def draw_graph(opts):
                 print(
                     random.choice([
                         "Losses aren't real 'till you sell 💎🙌",
-                        "Literally cannot go tits up 💎🙌", "GUH.",
+                        "Literally cannot go tits up 💎🙌",
+                        "GUH.",
                         "Short squeeze any time now 💎🙌",
                         "Are you sufficiently leveraged for your Personal Risk Tolerance?",
                     ]))
