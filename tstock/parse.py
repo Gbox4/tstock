@@ -43,19 +43,27 @@ def parse_args(parser):
         "currency_symbol": "$",
     }
 
-    # Autofit x and y size
-    t = os.get_terminal_size()
-    tx = t.columns
-    ty = t.lines
+    try:
+        # Autofit x and y size
+        t = os.get_terminal_size()
+        tx = t.columns
+        ty = t.lines
 
-    if opts["intervals_back"] == -1:
-        opts["intervals_back"] = tx - opts['pad_x']*2 - 15
+        if opts["intervals_back"] == -1:
+            opts["intervals_back"] = tx - opts['pad_x']*2 - 15
+            if args.v:
+                print("Automatically resizing x to fit...")
+        if opts["max_y"] == -1:
+            opts["max_y"] = ty - 6
+            if args.v:
+                print("Automatically resizing y to fit...")
+    except:
         if args.v:
-            print("Small x detected, automatically resizing to fit...")
-    if opts["max_y"] == -1:
-        opts["max_y"] = ty - 6
-        if args.v:
-            print("Small y detected, automatically resizing to fit...")
+            print("Autosize failed, setting x and y to defaults...")
+        if opts["intervals_back"] == -1:
+            opts["intervals_back"] = 70
+        if opts["max_y"] == -1:
+            opts["max_y"] = 40
     
 
     # Infer the asset class from the input
