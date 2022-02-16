@@ -35,6 +35,7 @@ def parse_args(parser):
         "pad_x": args.padx,
         "pad_y": args.pady,
         "verbose": args.v,
+        "nocolor": args.nocolor,
         "wisdom": args.w,
         "intraday": 'min' in args.t,
         "chart_only": args.chart,
@@ -164,6 +165,9 @@ def get_args():
 
     arg.add_argument("--pady", metavar="LINES", type=int, default=4,
         help="Vertical padding of the chart. Defaults to 4.")
+
+    arg.add_argument("--nocolor", action="store_true",
+        help="Prints chart with no color.")
 
     arg.add_argument("-v", action="store_true",
         help="Toggle verbosity.")

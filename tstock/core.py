@@ -272,6 +272,7 @@ def draw_graph(opts):
     currency_symbol = opts['currency_symbol']
     intraday = 'min' in interval
     candlesticks = get_candlesticks(opts)
+    nocolor = opts["nocolor"]
 
     max_x = len(candlesticks) + pad_x * 2 + 2
 
@@ -375,7 +376,7 @@ def draw_graph(opts):
         out = ""
         out += y_axis_labels[y]
         for x, char in enumerate(row):
-            if y >= y_axis_low and y <= y_axis_high:
+            if y >= y_axis_low and y <= y_axis_high and not nocolor:
                 out += column_colors[x]
             out += char
         print(out)
