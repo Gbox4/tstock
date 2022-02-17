@@ -40,9 +40,42 @@ def get_api_key():
     else:
         return os.getenv('ALPHAVANTAGE_API_KEY')
 
+def print_search(opts):
+    """Full script for the -s option."""
+    ticker = opts["ticker"]
+    apikey = get_api_key()
+    verbose = opts["verbose"]
+    request_url = f'https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords={ticker}&apikey={apikey}'
+    if verbose:
+        print(f"API Key: {apikey}\nRequest URL: {request_url}")
+
+    # Try to make a HTTP request. If this fails, there is probably no internet.
+    try:
+        r = requests.get(request_url).json()
+    except:
+        print("An error occured while making an HTTP request. Are you connected to the internet?")
+        sys.exit(1)
+    # If the API responds with 'Error Message', report it and exit.
+    if 'Error Message' in list(r.keys()):
+        print(f"error: The API returned the following error:\n{r}")
+        sys.exit(1)
+    # Try to parse the incoming JSON data. If it fails, then the API does that weird thing where it returns an empty JSON object {}
+    try:
+        data = list(r.values())[0]
+    except IndexError:
+        print("Error: The API did not return data.")
+        sys.exit(1)
+    
+    print("The search returned the following results:")
+    for i in data:
+        print(f"\x1b[35;1m{i['1. symbol']} \x1b[32;1m({i['2. name']})\x1b[0m")
+        print(f"\tReigon:\t\t\x1b[36m{i['4. region']}\x1b[0m")
+        print(f"\tType:\t\t\x1b[36m{i['3. type']}\x1b[0m")
+        print(f"\tCurrency:\t\x1b[36m{i['8. currency']}\x1b[0m")
+
 
 def print_short(opts):
-    """Full script for the -s option."""
+    """Full script for the --short option."""
     ticker = opts["ticker"]
     asset_class = opts["asset_class"]
     apikey = get_api_key()
@@ -79,6 +112,9 @@ def print_short(opts):
     try:
         data = list(r.values())[0]
     except IndexError:
+        print("Error: The API did not return data.")
+        sys.exit(1)
+    if not bool(data):
         print("Error: The API did not return data.")
         sys.exit(1)
     
@@ -259,6 +295,10 @@ def draw_graph(opts):
 
     if opts['short']:
         print_short(opts)
+        return(0)
+
+    if opts['search']:
+        print_search(opts)
         return(0)
 
     ticker = opts["ticker"]

@@ -40,7 +40,8 @@ def parse_args(parser):
         "intraday": 'min' in args.t,
         "chart_only": args.chart,
         "currency": args.c,
-        "short": args.s,
+        "short": args.short,
+        "search": args.s,
         "currency_symbol": "$",
     }
 
@@ -149,7 +150,7 @@ def get_args():
         help="Enables extra words of 'wisdom'.")
 
     arg.add_argument("-s", action="store_true",
-        help="Short output, prints the last price only.")
+        help="Search for stock tickers. Useful for getting exchange codes.")
 
     arg.add_argument("--chart", action="store_true",
         help="Print the chart only. Overrides -w.")
@@ -168,6 +169,9 @@ def get_args():
 
     arg.add_argument("--pady", metavar="LINES", type=int, default=4,
         help="Vertical padding of the chart. Defaults to 4.")
+
+    arg.add_argument("--short", action="store_true",
+        help="Short output, prints the last price only.")
 
     arg.add_argument("--nocolor", action="store_true",
         help="Prints chart with no color.")
