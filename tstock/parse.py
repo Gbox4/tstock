@@ -52,6 +52,9 @@ def parse_args(parser):
 
         if opts["intervals_back"] == -1:
             opts["intervals_back"] = tx - opts['pad_x']*2 - 15
+            # Take out an extra line off the top if wisdom is begin dispensed
+            if opts["wisdom"]:
+                opts["intervals_back"] -= 1
             if args.v:
                 print("Automatically resizing x to fit...")
         if opts["max_y"] == -1:
