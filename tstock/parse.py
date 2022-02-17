@@ -123,6 +123,10 @@ def parse_args(parser):
         else:
             opts['currency_symbol'] = ''
 
+    # Handle currency symbol for stocks
+    if opts['asset_class'] == 'stock' and "." in opts["ticker"]:
+        opts["currency_symbol"] = "" # legit just give up if it's a foreign stock :(
+
     # Print options if verbose
     if args.v:
         for k, v in opts.items():

@@ -40,6 +40,7 @@ def get_api_key():
     else:
         return os.getenv('ALPHAVANTAGE_API_KEY')
 
+
 def print_search(opts):
     """Full script for the -s option."""
     ticker = opts["ticker"]
