@@ -60,10 +60,9 @@ After installing `tstock`, you will need a AlphaVantage API key to pull the mark
 ### Usage
 
 ```
-tstock --help
-usage: tstock [-h] [-t INTERVAL] [-b COUNT] [-w] [-s] [--chart]
-                   [-c CURRENCY] [-y LINES] [-a CLASS] [--padx COLUMNS]
-                   [--pady LINES] [-v] [--version]
+$ tstock --help
+usage: tstock [-h] [-t INTERVAL] [-b COUNT] [-w] [-s] [--chart] [-c CURRENCY] [-y LINES] [-a CLASS]
+                   [--padx COLUMNS] [--pady LINES] [--short] [--nocolor] [-v] [--version]
                    [TICKER]
 
 tstock - generate stock charts in the terminal.
@@ -74,36 +73,48 @@ positional arguments:
 options:
   -h, --help      show this help message and exit
   -t INTERVAL     Time interval of each candlestick. Valid values are '1min', '5min', '15min', '30min', '60min', 'day', 'week', or 'month'. Defaults to 'day'.
-  -b COUNT        Number of time intervals back to go back. The number of candlesticks generated. Defaults to 70.
+  -b COUNT        Number of time intervals back to go back. The number of candlesticks generated. Defaults to fill the terminal.
   -w              Enables extra words of 'wisdom'.
-  -s              Short output, prints the last price only.
+  -s              Search for stock tickers. Useful for getting exchange codes.
   --chart         Print the chart only. Overrides -w.
   -c CURRENCY     Set the currency. Only works with '-a crypto'. Defaults to 'USD'.
-  -y LINES        Height of the chart. Defaults to 40.
+  -y LINES        Height of the chart. Defaults to fill the terminal.
   -a CLASS        The asset class of TICKER. Valid values are 'stock', 'crypto', and 'forex'. Autodetects depending on input ticker.
   --padx COLUMNS  Horizontal padding of the chart. Defaults to 5.
   --pady LINES    Vertical padding of the chart. Defaults to 4.
+  --short         Short output, prints the last price only.
+  --nocolor       Prints chart with no color.
   -v              Toggle verbosity.
   --version       Print tstock version.
 
 Examples:
     tstock aapl # chart of $AAPL
-    tstock aapl -t 1min # the past 70 1-minute-intervals of $AAPL
-    tstock aapl -t 60min -b 24 # the past 24 60-minute-intervals (aka past day) of $AAPL
-    tstock aapl -t 60min -b 24 -y 20 # same as above, but only 20 lines high
-    tstock btc # chart of the cryptocurrency $BTC
-    tstock btc -w # same as above, with rocket ships 🚀🚀🚀
-    tstock btc -c GBP # same as above, but in currency GBP
+    tstock aapl -b 24 -t 60min # the past 24 60-minute-intervals of $AAPL, 20 lines high
+    tstock -s shopify # search the API for keyword "shopify"
+    tstock shop.trt # chart of $SHOP on the TRT exchange
+    tstock btc -c GBP -w # chart of the price of Bitcoin in GBP with rockets
     tstock usd/eur # chart of the price of USD in euros
 ```
 
-Run `tstock TICKER` to get the 70 day chart of `$TICKER`. Use `-b COUNT` to specify the number of intervals back you want to pull. `-t INTERVAL` will specify the time interval of each candlestick. Use `-y LINES` to specify the length of the chart's y axis.
+Run `tstock TICKER` to get the a chart of `$TICKER`. Use `-b COUNT` to specify the number of intervals back you want to pull. `-t INTERVAL` will specify the time interval of each candlestick. Use `-y LINES` to specify the length of the chart's y axis.
 
-To get cryptocurrencies, use the `-a crypto` option. For example, `tstock -a crypto BTC` would fetch a price chart of Bitcoin.
+Use the search function `tstock -s KEYWORD` to search the AlphaVantage API for tickers.
+
+You can get international markets by specifying a code after `.`. For example, to get SAIC Motor Corporation on the Shanghai Stock Exchange, run `tstock 600104.SHH`. The `-s` option is useful for finding the exchange codes for foreign exchanges. For example:
+
+```
+tstock tesco -s
+The search returned the following results:
+TSCO.LON (Tesco PLC)
+        Reigon:         United Kingdom
+        Type:           Equity
+        Currency:       GBX
+```
 
 For more options, run `tstock -h`
 
-You can get international markets by specifying a code after `.`. For example, to get SAIC Motor Corporation on the Shanghai Stock Exchange, run `tstock 600104.SHH`. Find more information on how to specify special tickers on AlphaVantage's docs: https://www.alphavantage.co/documentation
+More API information in AlphaVantage's docs: https://www.alphavantage.co/documentation
+
 
 # Notes
 

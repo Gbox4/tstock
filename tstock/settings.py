@@ -5,11 +5,9 @@ __version__ = "2.2.3"
 # Printed as a part of --help
 extra_help = """Examples:
     tstock aapl # chart of $AAPL
-    tstock aapl -t 1min # chart of 1-minute-intervals of $AAPL
-    tstock aapl -t 60min -b 24 # the past 24 60-minute-intervals (aka past day) of $AAPL
-    tstock aapl -t 60min -b 24 -y 20 # same as above, but only 20 lines high
-    tstock btc # chart of the cryptocurrency $BTC
-    tstock btc -w # same as above, with rocket ships
-    tstock btc -c GBP # same as above, but in currency GBP
+    tstock aapl -b 24 -t 60min # the past 24 60-minute-intervals of $AAPL, 20 lines high
+    tstock -s shopify # search the API for keyword "shopify"
+    tstock shop.trt # chart of $SHOP on the TRT exchange
+    tstock btc -c GBP -w # chart of the price of Bitcoin in GBP with rockets 
     tstock usd/eur # chart of the price of USD in euros
 """
