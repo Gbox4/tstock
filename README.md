@@ -26,20 +26,20 @@ Just type `tstock aapl` to get a 3 month candlestick chart of $AAPL in your term
 
 # Installation
 
-### AUR
-
-`tstock` is available on the AUR. If you are on an Archlinux system, you can just install it using your AUR helper. Example using `yay`:
-
-```
-yay -S tstock
-```
-
 ### PyPI
 
-`tstock` is also available as a Python package. You can install it using `pip`:
+`tstock` is also available as a Python 3 package. You can install it using `pip`:
 
+```bash
+pip install tstock # use pip3 on Ubuntu 18.04 and older
 ```
-pip install tstock
+
+### AUR
+
+`tstock` is available on the AUR. If you are on an Archlinux based system, you can just install it using your favorite AUR helper. Example using `yay`:
+
+```bash
+yay -S tstock
 ```
 
 ### Docker
@@ -110,6 +110,8 @@ TSCO.LON (Tesco PLC)
         Type:           Equity
         Currency:       GBX
 ```
+
+Now we know the ticker, we can get fetch the chart with `tstock tsco.lon`.
 
 For more options, run `tstock -h`
 
