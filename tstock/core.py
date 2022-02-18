@@ -7,7 +7,7 @@ import requests
 import numpy as np
 from .parse import *
 
-def translate(x, l1, h1, l2, h2):
+def translate(x: float, l1: float, h1: float, l2: float, h2: float) -> float:
     """
     Translate from one range to another.
     
@@ -28,7 +28,7 @@ def translate(x, l1, h1, l2, h2):
         sys.exit(1)
 
 
-def get_api_key():
+def get_api_key() -> str:
     """Gets the API key from the environment variable ALPHAVANTAGE_API_KEY, raises an error if not found."""
     if os.getenv('ALPHAVANTAGE_API_KEY') == None:
         print("error: API key not detected! Follow these instructions to get your API Key working:\n" + \
@@ -41,7 +41,7 @@ def get_api_key():
         return os.getenv('ALPHAVANTAGE_API_KEY')
 
 
-def print_search(opts):
+def print_search(opts: dict):
     """Full script for the -s option."""
     ticker = opts["ticker"]
     apikey = get_api_key()
@@ -75,7 +75,7 @@ def print_search(opts):
         print(f"\tCurrency:\t\x1b[36m{i['8. currency']}\x1b[0m")
 
 
-def print_short(opts):
+def print_short(opts: dict):
     """Full script for the --short option."""
     ticker = opts["ticker"]
     asset_class = opts["asset_class"]
@@ -130,7 +130,7 @@ def print_short(opts):
             print(currency_symbol + "{:,.2f}".format(price))
 
 
-def get_request_url(opts):
+def get_request_url(opts: dict):
     """Generates an API request URL based off of options."""
     interval = opts["interval"]
     ticker = opts["ticker"]
@@ -195,7 +195,7 @@ def get_request_url(opts):
 
 # It would be nice if when the candlesticks are drawn, additional detail could be had by utilizing quarter-blocks and eighth-blocks.
 # Not sure if this is possible though.
-def get_candlesticks(opts):
+def get_candlesticks(opts: dict) -> list:
     """Creates a list of candlesticks of the shape [O, H, L, C, D]."""
     interval = opts["interval"]
     intervals_back = opts['intervals_back']
@@ -291,7 +291,7 @@ def get_candlesticks(opts):
     return candlesticks
 
 
-def draw_graph(opts):
+def draw_graph(opts: dict):
     """Main tstock script body."""
 
     if opts['short']:
