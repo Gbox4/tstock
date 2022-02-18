@@ -28,7 +28,7 @@ Just type `tstock aapl` to get a 3 month candlestick chart of $AAPL in your term
 
 ### PyPI
 
-`tstock` is also available as a Python 3 package. You can install it using `pip`:
+`tstock` is available as a Python 3 package. You can install it using `pip`:
 
 ```bash
 pip install tstock # use pip3 on Ubuntu 18.04 and older
@@ -36,7 +36,7 @@ pip install tstock # use pip3 on Ubuntu 18.04 and older
 
 ### AUR
 
-`tstock` is available on the AUR. If you are on an Archlinux based system, you can just install it using your favorite AUR helper. Example using `yay`:
+`tstock` is also available on the AUR. If you are on an Archlinux based system, you can just install it using your favorite AUR helper. Example using `yay`:
 
 ```bash
 yay -S tstock
