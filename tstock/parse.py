@@ -36,6 +36,8 @@ def parse_args(parser: argparse.ArgumentParser):
         "pad_y": args.pady,
         "verbose": args.v,
         "nocolor": args.nocolor,
+        "upcolor": args.upcolor,
+        "downcolor": args.downcolor,
         "wisdom": args.w,
         "intraday": 'min' in args.t,
         "chart_only": args.chart,
@@ -91,6 +93,17 @@ def parse_args(parser: argparse.ArgumentParser):
             print(f"Invalid class value {opts['asset_class']}.")
             sys.exit(1)
     
+    # Validate arguments for upcolor and downcolor
+    if args.upcolor:
+        if args.upcolor not in ['green', 'red', 'blue']:
+            print(f"Invalid color {args.upcolor}.")
+            sys.exit(1)
+    if args.downcolor:
+        if args.downcolor not in ['green', 'red', 'blue']:
+            print(f"Invalid color {args.upcolor}.")
+            sys.exit(1)
+    
+
     # Handle currency symbol for -c option
     if args.c != 'USD' and opts['asset_class'] != 'crypto':
         print("Warning: the -c flag is only supported for asset type 'crypto'. It will be ignored.")
@@ -179,6 +192,12 @@ def get_args():
 
     arg.add_argument("--nocolor", action="store_true",
         help="Prints chart with no color.")
+
+    arg.add_argument("--upcolor", metavar="COLOR", type=str, default="green",
+        help="Color of positive candles. Valid numbers are 'green', 'red', or 'blue'. Defaults to green.")
+    
+    arg.add_argument("--downcolor", metavar="COLOR", type=str, default="red",
+        help="Color of negative candles. Valid numbers are 'green', 'red', or 'blue'. Defaults to red.")
 
     arg.add_argument("-v", action="store_true",
         help="Toggle verbosity.")
