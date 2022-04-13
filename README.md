@@ -86,8 +86,8 @@ options:
   --pady LINES    Vertical padding of the chart. Defaults to 4.
   --short         Short output, prints the last price only.
   --nocolor       Prints chart with no color.
-  --upcolor COLOR    Color of positive candles. Valid values are 'green', 'red', or 'blue'. Defaults to green.
-  --downcolor COLOR  Color of negative candles. Valid values are 'green', 'red', or 'blue'. Defaults to red.
+  --upcolor COLOR    Color of positive candlesticks. Valid values are 'green', 'red', or 'blue'. Defaults to green.
+  --downcolor COLOR  Color of negative candlesticks. Valid values are 'green', 'red', or 'blue'. Defaults to red.
   -v              Toggle verbosity.
   --version       Print tstock version.
 
