@@ -100,7 +100,7 @@ def parse_args(parser: argparse.ArgumentParser):
             sys.exit(1)
     if args.downcolor:
         if args.downcolor not in ['green', 'red', 'blue']:
-            print(f"Invalid color {args.upcolor}.")
+            print(f"Invalid color {args.downcolor}.")
             sys.exit(1)
     
 
@@ -194,10 +194,10 @@ def get_args():
         help="Prints chart with no color.")
 
     arg.add_argument("--upcolor", metavar="COLOR", type=str, default="green",
-        help="Color of positive candles. Valid numbers are 'green', 'red', or 'blue'. Defaults to green.")
+        help="Color of positive candles. Valid values are 'green', 'red', or 'blue'. Defaults to green.")
     
     arg.add_argument("--downcolor", metavar="COLOR", type=str, default="red",
-        help="Color of negative candles. Valid numbers are 'green', 'red', or 'blue'. Defaults to red.")
+        help="Color of negative candles. Valid values are 'green', 'red', or 'blue'. Defaults to red.")
 
     arg.add_argument("-v", action="store_true",
         help="Toggle verbosity.")
