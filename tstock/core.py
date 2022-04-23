@@ -314,6 +314,12 @@ def draw_graph(opts: dict):
     intraday = 'min' in interval
     candlesticks = get_candlesticks(opts)
     nocolor = opts["nocolor"]
+    upcolor = opts["upcolor"]
+    downcolor = opts["downcolor"]
+
+    ANSI_colors = {"green" : "\x1b[32m",
+                    "red" : "\x1b[31m",
+                    "blue" : "\x1b[34m"}
 
     max_x = len(candlesticks) + pad_x * 2 + 2
 
@@ -367,7 +373,7 @@ def draw_graph(opts: dict):
         # Draw open/close
         # Positive day, stock went up
         if c[0] < c[3]:
-            column_colors[shifted_i] = "\x1b[32m"  # ANSI green
+            column_colors[shifted_i] = ANSI_colors[upcolor]
             tmp = translated_low
             translated_low = translated_high
             translated_high = tmp
@@ -375,7 +381,7 @@ def draw_graph(opts: dict):
                 chart[y, shifted_i] = "█"
         # Negative day, stock went down
         else:
-            column_colors[shifted_i] = "\x1b[31m"  # ANSI red
+            column_colors[shifted_i] = ANSI_colors[downcolor]
             for y in range(translated_open, translated_close + 1):
                 chart[y, shifted_i] = "█"
 
