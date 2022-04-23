@@ -1,6 +1,6 @@
 # Written by Gabe Banks 2022 <https://gabebanks.net>
 
-__version__ = "2.2.5"
+__version__ = "2.2.6"
 
 # Printed as a part of --help
 extra_help = """Examples:
