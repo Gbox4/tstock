@@ -145,7 +145,7 @@ def get_request_url(opts: dict):
     # Builds different request_urls corresponding to the endpoints of the API, depending on which asset class is specified.
     if asset_class == "stock":
         if interval == 'day':
-            api_function = 'TIME_SERIES_DAILY'
+            api_function = 'TIME_SERIES_DAILY_ADJUSTED'
         elif interval == 'week':
             api_function = 'TIME_SERIES_WEEKLY'
         elif interval == 'month':
